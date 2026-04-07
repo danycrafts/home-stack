@@ -5,7 +5,7 @@
 # Domain: invariantcontinuum.io
 # Services:
 #   - pgadmin.invariantcontinuum.io  - Database Administration
-#   - auth.invariantcontinuum.io - Identity & Access Management
+#   - auth.invariantcontinuum.io     - Identity & Access Management (Keycloak)
 #   - n8n.invariantcontinuum.io      - Workflow Automation
 #   - npm.invariantcontinuum.io      - Reverse Proxy Manager
 # =============================================================================
@@ -50,7 +50,7 @@ services:
       start_period: 15s
 
   # ===========================================================================
-  # PGADMIN - PASSWORD-LESS DATABASE ADMINISTRATION
+  # PGADMIN - DATABASE ADMINISTRATION WITH KEYCLOAK OAUTH
   # ===========================================================================
   pgadmin:
     image: dpage/pgadmin4:${PGADMIN_VERSION:-latest}
@@ -74,6 +74,18 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
       PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+      # OAuth Configuration for Keycloak
+      PGADMIN_CONFIG_AUTHENTICATION_SOURCES: "[\"oauth2\", \"internal\"]"
+      PGADMIN_CONFIG_OAUTH2_AUTO_CREATE_USER: "True"
+      PGADMIN_CONFIG_OAUTH2_NAME: "Keycloak"
+      PGADMIN_CONFIG_OAUTH2_DISPLAY_NAME: "Invariant Continuum"
+      PGADMIN_CONFIG_OAUTH2_CLIENT_ID: "pgadmin"
+      PGADMIN_CONFIG_OAUTH2_CLIENT_SECRET: "pgadmin-client-secret"
+      PGADMIN_CONFIG_OAUTH2_AUTHORIZATION_ENDPOINT: "http://auth.invariantcontinuum.io/realms/invariant/protocol/openid-connect/auth"
+      PGADMIN_CONFIG_OAUTH2_TOKEN_ENDPOINT: "http://auth.invariantcontinuum.io/realms/invariant/protocol/openid-connect/token"
+      PGADMIN_CONFIG_OAUTH2_USERINFO_ENDPOINT: "http://auth.invariantcontinuum.io/realms/invariant/protocol/openid-connect/userinfo"
+      PGADMIN_CONFIG_OAUTH2_SCOPE: "openid email profile"
+      PGADMIN_CONFIG_OAUTH2_ICON: "fa-keycloak"
     volumes:
       - pgadmin-data:/var/lib/pgadmin
       - ./services/pgadmin/servers.json:/pgadmin4/servers.json:ro
@@ -83,6 +95,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      keycloak:
+        condition: service_started
     networks:
       - infra-network
     healthcheck:
@@ -133,7 +147,7 @@ services:
       start_period: 90s
 
   # ===========================================================================
-  # N8N - WORKFLOW AUTOMATION
+  # N8N - WORKFLOW AUTOMATION WITH KEYCLOAK OAUTH
   # Uses PostgreSQL for data storage
   # ===========================================================================
   n8n:
@@ -149,8 +163,15 @@ services:
       N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
       N8N_EDITOR_BASE_URL: ${N8N_PROTOCOL:-http}://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}/
       WEBHOOK_URL: ${N8N_PROTOCOL:-http}://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}/
-      # Authentication disabled (open access)
-      N8N_BASIC_AUTH_ACTIVE: "false"
+      # n8n External Authentication (Keycloak OAuth)
+      N8N_EXTERNAL_AUTH_ENABLED: "true"
+      N8N_EXTERNAL_AUTH_OAUTH2_ISSUER_URL: "http://auth.invariantcontinuum.io/realms/invariant"
+      N8N_EXTERNAL_AUTH_OAUTH2_AUTHORIZE_ENDPOINT: "http://auth.invariantcontinuum.io/realms/invariant/protocol/openid-connect/auth"
+      N8N_EXTERNAL_AUTH_OAUTH2_TOKEN_ENDPOINT: "http://auth.invariantcontinuum.io/realms/invariant/protocol/openid-connect/token"
+      N8N_EXTERNAL_AUTH_OAUTH2_USERINFO_ENDPOINT: "http://auth.invariantcontinuum.io/realms/invariant/protocol/openid-connect/userinfo"
+      N8N_EXTERNAL_AUTH_OAUTH2_CLIENT_ID: "n8n"
+      N8N_EXTERNAL_AUTH_OAUTH2_CLIENT_SECRET: "n8n-client-secret"
+      N8N_EXTERNAL_AUTH_OAUTH2_SCOPE: "openid email profile"
       # PostgreSQL Database Configuration
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: postgres
@@ -169,6 +190,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      keycloak:
+        condition: service_started
     networks:
       - infra-network
     healthcheck:
@@ -251,7 +274,7 @@ volumes:
   pgadmin-data:
     name: local-pgadmin-data
   n8n-data:
-      name: local-n8n-data
+    name: local-n8n-data
   npm-data:
     name: local-npm-data
   npm-letsencrypt:
