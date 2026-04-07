@@ -137,6 +137,11 @@ create_proxy_host_https "${NPM_SUBDOMAIN}"     "nginx-proxy-manager" 81
 echo "└──────────────────────────────────────────────────────────────────────────┘"
 echo ""
 
+echo "┌─ Platform Services ────────────────────────────────────────────────────┐"
+create_proxy_host_https "substrate" "substrate-gateway" 8080
+echo "└──────────────────────────────────────────────────────────────────────────┘"
+echo ""
+
 echo "┌─ Data Services ──────────────────────────────────────────────────────────┐"
 create_proxy_host_https "${REDIS_COMMANDER_SUBDOMAIN}" "redis-commander" 8081
 create_proxy_host_https "${MINIO_SUBDOMAIN}"          "minio"          9000
@@ -159,6 +164,9 @@ echo "  → https://${PGADMIN_SUBDOMAIN}.${DOMAIN}"
 echo "  → https://${KC_SUBDOMAIN}.${DOMAIN}"
 echo "  → https://${N8N_SUBDOMAIN}.${DOMAIN}"
 echo "  → https://${NPM_SUBDOMAIN}.${DOMAIN}"
+echo ""
+echo "Platform:"
+echo "  → https://substrate.${DOMAIN}          (Substrate Platform)"
 echo ""
 echo "Data Services:"
 echo "  → https://${REDIS_COMMANDER_SUBDOMAIN}.${DOMAIN}   (Redis Commander)"
