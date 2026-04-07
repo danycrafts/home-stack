@@ -1,12 +1,12 @@
 # =============================================================================
 # LOCAL INFRASTRUCTURE - Postgres + PgAdmin + Keycloak + n8n + Nginx Proxy Manager
 # =============================================================================
-# Domain: invariantcontinuum.io
+# Domain: your-domain.com
 # Services:
-#   - pgadmin.invariantcontinuum.io
-#   - keycloak.invariantcontinuum.io
-#   - n8n.invariantcontinuum.io
-#   - npm.invariantcontinuum.io
+#   - pgadmin.your-domain.com
+#   - keycloak.your-domain.com
+#   - n8n.your-domain.com
+#   - npm.your-domain.com
 # =============================================================================
 
 name: local-infra
@@ -66,7 +66,7 @@ services:
         chown pgadmin:root /tmp/pgpassfile
         /entrypoint.sh
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
+      PGADMIN_DEFAULT_EMAIL: ${ADMIN_EMAIL:-admin@your-domain.com}
       PGADMIN_DEFAULT_PASSWORD: ${ADMIN_PASSWORD:-invariant}
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
@@ -105,7 +105,7 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/${KC_DB_NAME:-keycloak}
       KC_DB_USERNAME: ${KC_DB_USER:-keycloak}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-invariant}
-      KC_HOSTNAME: ${KC_SUBDOMAIN:-keycloak}.${DOMAIN_NAME:-invariantcontinuum.io}
+      KC_HOSTNAME: ${KC_SUBDOMAIN:-keycloak}.${DOMAIN_NAME:-your-domain.com}
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
@@ -139,12 +139,12 @@ services:
     security_opt:
       - no-new-privileges:true
     environment:
-      N8N_HOST: ${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}
+      N8N_HOST: ${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-your-domain.com}
       N8N_PORT: 5678
       N8N_PROTOCOL: ${N8N_PROTOCOL:-https}
-      N8N_EDITOR_BASE_URL: ${N8N_PROTOCOL:-https}://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}/
-      WEBHOOK_URL: ${N8N_PROTOCOL:-https}://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}/
-      N8N_DEFAULT_USER_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
+      N8N_EDITOR_BASE_URL: ${N8N_PROTOCOL:-https}://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-your-domain.com}/
+      WEBHOOK_URL: ${N8N_PROTOCOL:-https}://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-your-domain.com}/
+      N8N_DEFAULT_USER_EMAIL: ${ADMIN_EMAIL:-admin@your-domain.com}
       N8N_DEFAULT_USER_PASSWORD: ${ADMIN_PASSWORD:-invariant}
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: postgres

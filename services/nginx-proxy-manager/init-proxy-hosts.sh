@@ -5,8 +5,8 @@
 set -e
 
 NPM_URL="http://localhost:81"
-DOMAIN="${DOMAIN_NAME:-invariantcontinuum.io}"
-ADMIN_EMAIL="${ADMIN_EMAIL:-admin@invariantcontinuum.io}"
+DOMAIN="${DOMAIN_NAME:-your-domain.com}"
+ADMIN_EMAIL="${ADMIN_EMAIL:-admin@your-domain.com}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-invariant}"
 PGADMIN_SUBDOMAIN="${PGADMIN_SUBDOMAIN:-pgadmin}"
 KC_SUBDOMAIN="${KC_SUBDOMAIN:-keycloak}"

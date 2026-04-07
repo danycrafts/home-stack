@@ -2,37 +2,37 @@
 
 Local development stack with PostgreSQL, PgAdmin, n8n, and Nginx Proxy Manager.
 
-**Domain:** `invariantcontinuum.io`
+**Domain:** `your-domain.com`
 
 ## Services
 
 | Service | Subdomain | Local Port | Description |
 |---------|-----------|------------|-------------|
 | **PostgreSQL** | - | 5432 | Relational database |
-| **PgAdmin** | pgadmin.invariantcontinuum.io | 5050 | Database administration UI |
-| **n8n** | n8n.invariantcontinuum.io | 5678 | Workflow automation |
-| **Nginx Proxy Manager** | npm.invariantcontinuum.io | 81 | Reverse proxy & SSL |
+| **PgAdmin** | pgadmin.your-domain.com | 5050 | Database administration UI |
+| **n8n** | n8n.your-domain.com | 5678 | Workflow automation |
+| **Nginx Proxy Manager** | npm.your-domain.com | 81 | Reverse proxy & SSL |
 
 ## Quick Start
 
 1. **Configure environment:**
    ```bash
    cp .env.example .env
-   # Edit .env if needed (defaults to invariantcontinuum.io)
+   # Edit .env if needed (defaults to your-domain.com)
    ```
 
 ## Access URLs
 
 ### Via Domain (requires /etc/hosts or DNS)
 ```
-http://pgadmin.invariantcontinuum.io
-http://n8n.invariantcontinuum.io
-http://npm.invariantcontinuum.io
+http://pgadmin.your-domain.com
+http://n8n.your-domain.com
+http://npm.your-domain.com
 ```
 
 Add to `/etc/hosts`:
 ```
-127.0.0.1 pgadmin.invariantcontinuum.io n8n.invariantcontinuum.io npm.invariantcontinuum.io
+127.0.0.1 pgadmin.your-domain.com n8n.your-domain.com npm.your-domain.com
 ```
 
 ### Via Localhost
@@ -45,7 +45,7 @@ http://localhost:81      # NPM Admin
 ### Default Credentials
 
 **PgAdmin:**
-- Email: `admin@invariantcontinuum.io`
+- Email: `admin@your-domain.com`
 - Password: (from .env, default: changeme)
 
 **n8n:**
@@ -53,7 +53,7 @@ http://localhost:81      # NPM Admin
 - Password: (from .env, default: changeme)
 
 **Nginx Proxy Manager:**
-- Email: `admin@invariantcontinuum.io`
+- Email: `admin@your-domain.com`
 - Password: (from .env, default: changeme)
 
 ## Usage
@@ -68,7 +68,7 @@ docker compose logs -f  # View logs
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DOMAIN_NAME` | Base domain | `invariantcontinuum.io` |
+| `DOMAIN_NAME` | Base domain | `your-domain.com` |
 | `N8N_SUBDOMAIN` | n8n subdomain | `n8n` |
 | `PGADMIN_SUBDOMAIN` | PgAdmin subdomain | `pgadmin` |
 | `NPM_ADMIN_SUBDOMAIN` | NPM admin subdomain | `npm` |
