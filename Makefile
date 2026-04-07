@@ -80,7 +80,7 @@ test:
 	@echo -n "PostgreSQL (localhost:5432)... "
 	@nc -z localhost 5432 && echo "✓ OK" || echo "✗ FAILED"
 	@echo -n "PgAdmin (localhost:5050)... "
-	@curl -sf http://localhost:5050/login >/dev/null && echo "✓ OK" || echo "✗ FAILED"
+	@curl -sf http://localhost:5050 >/dev/null && echo "✓ OK" || echo "✗ FAILED"
 	@echo -n "Keycloak (localhost:8080)... "
 	@curl -sf http://localhost:8080/admin >/dev/null && echo "✓ OK" || echo "✗ FAILED"
 	@echo -n "n8n (localhost:5678)... "
