@@ -5,7 +5,7 @@
 # Domain: invariantcontinuum.io
 # Services:
 #   - pgadmin.invariantcontinuum.io  - Database Administration
-#   - keycloak.invariantcontinuum.io - Identity & Access Management
+#   - auth.invariantcontinuum.io - Identity & Access Management
 #   - n8n.invariantcontinuum.io      - Workflow Automation
 #   - npm.invariantcontinuum.io      - Reverse Proxy Manager
 # =============================================================================
@@ -109,7 +109,7 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/${KC_DB_NAME:-keycloak}
       KC_DB_USERNAME: ${KC_DB_USER:-keycloak}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-changeme}
-      KC_HOSTNAME: ${KC_SUBDOMAIN:-keycloak}.${DOMAIN_NAME:-invariantcontinuum.io}
+      KC_HOSTNAME: ${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
@@ -221,7 +221,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
       PGADMIN_SUBDOMAIN: ${PGADMIN_SUBDOMAIN:-pgadmin}
-      KC_SUBDOMAIN: ${KC_SUBDOMAIN:-keycloak}
+      KC_SUBDOMAIN: ${KC_SUBDOMAIN:-auth}
       N8N_SUBDOMAIN: ${N8N_SUBDOMAIN:-n8n}
       NPM_ADMIN_SUBDOMAIN: ${NPM_ADMIN_SUBDOMAIN:-npm}
     volumes:

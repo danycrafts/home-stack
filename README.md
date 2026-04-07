@@ -10,7 +10,7 @@ Complete local development stack with PostgreSQL, PgAdmin, Keycloak, n8n, and Ng
 |---------|-----------|------------|-------------|
 | **PostgreSQL** | - | 5432 | Central relational database for all services |
 | **PgAdmin** | pgadmin.invariantcontinuum.io | 5050 | Database administration UI (password-less) |
-| **Keycloak** | keycloak.invariantcontinuum.io | 8080 | Identity & Access Management |
+| **Keycloak** | auth.invariantcontinuum.io | 8080 | Identity & Access Management |
 | **n8n** | n8n.invariantcontinuum.io | 5678 | Workflow automation (uses PostgreSQL) |
 | **Nginx Proxy Manager** | npm.invariantcontinuum.io | 81 | Reverse proxy & SSL management |
 
@@ -64,7 +64,7 @@ The stack includes **Infrastructure as Code** provisioning via the `npm-provisio
 - **Automatically configures** Nginx Proxy Manager via REST API
 - **Creates proxy hosts** for all services:
   - `pgadmin.invariantcontinuum.io` → pgadmin:80
-  - `keycloak.invariantcontinuum.io` → keycloak:8080
+  - `auth.invariantcontinuum.io` → keycloak:8080
   - `n8n.invariantcontinuum.io` → n8n:5678
   - `npm.invariantcontinuum.io` → nginx-proxy-manager:81
 - **Idempotent** - can be run multiple times safely
@@ -85,14 +85,14 @@ docker compose --profile provision up npm-provisioner
 ### Via Domain (requires /etc/hosts or DNS)
 ```
 http://pgadmin.invariantcontinuum.io
-http://keycloak.invariantcontinuum.io
+http://auth.invariantcontinuum.io
 http://n8n.invariantcontinuum.io
 http://npm.invariantcontinuum.io
 ```
 
 Add to `/etc/hosts`:
 ```
-127.0.0.1 pgadmin.invariantcontinuum.io keycloak.invariantcontinuum.io n8n.invariantcontinuum.io npm.invariantcontinuum.io
+127.0.0.1 pgadmin.invariantcontinuum.io auth.invariantcontinuum.io n8n.invariantcontinuum.io npm.invariantcontinuum.io
 ```
 
 ### Via Localhost
