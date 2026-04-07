@@ -43,6 +43,28 @@
       "PassFile": "/tmp/pgpassfile",
       "SSLMode": "prefer",
       "DBRestriction": ["minio"]
+    },
+    "5": {
+      "Name": "Substrate Ingestion",
+      "Group": "Substrate",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "substrate_ingestion",
+      "Username": "substrate_ingestion",
+      "PassFile": "/tmp/pgpassfile",
+      "SSLMode": "prefer",
+      "DBRestriction": ["substrate_ingestion"]
+    },
+    "6": {
+      "Name": "Substrate Graph",
+      "Group": "Substrate",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "substrate_graph",
+      "Username": "substrate_graph",
+      "PassFile": "/tmp/pgpassfile",
+      "SSLMode": "prefer",
+      "DBRestriction": ["substrate_graph"]
     }
   }
 }
