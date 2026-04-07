@@ -13,6 +13,13 @@ services:
       KC_DB_NAME: ${KC_DB_NAME:-keycloak}
       KC_DB_USER: ${KC_DB_USER:-keycloak}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-changeme}
+      # Substrate Platform
+      SUBSTRATE_INGESTION_DB_NAME: ${SUBSTRATE_INGESTION_DB_NAME:-substrate_ingestion}
+      SUBSTRATE_INGESTION_DB_USER: ${SUBSTRATE_INGESTION_DB_USER:-substrate_ingestion}
+      SUBSTRATE_INGESTION_DB_PASSWORD: ${SUBSTRATE_INGESTION_DB_PASSWORD:-changeme}
+      SUBSTRATE_GRAPH_DB_NAME: ${SUBSTRATE_GRAPH_DB_NAME:-substrate_graph}
+      SUBSTRATE_GRAPH_DB_USER: ${SUBSTRATE_GRAPH_DB_USER:-substrate_graph}
+      SUBSTRATE_GRAPH_DB_PASSWORD: ${SUBSTRATE_GRAPH_DB_PASSWORD:-changeme}
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./services/postgres/init:/docker-entrypoint-initdb.d:ro
