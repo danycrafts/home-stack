@@ -117,8 +117,7 @@ http://localhost:81      # NPM Admin
 - **Realm:** `invariant` (auto-imported)
 
 ### n8n
-- **Email:** `admin@invariantcontinuum.io`
-- **Password:** `changeme` (from .env)
+- **Authentication:** Disabled (open access)
 
 ### Nginx Proxy Manager
 - **Email:** `admin@invariantcontinuum.io`
