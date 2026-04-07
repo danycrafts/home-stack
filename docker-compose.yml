@@ -1,19 +1,20 @@
 # =============================================================================
-# LOCAL INFRASTRUCTURE - Postgres + PgAdmin + Keycloak + n8n + Nginx Proxy Manager
+# LOCAL INFRASTRUCTURE - Complete Stack
+# Services: PostgreSQL + PgAdmin + Keycloak + n8n + Nginx Proxy Manager
 # =============================================================================
-# Domain: your-domain.com
+# Domain: invariantcontinuum.io
 # Services:
-#   - pgadmin.your-domain.com
-#   - keycloak.your-domain.com
-#   - n8n.your-domain.com
-#   - npm.your-domain.com
+#   - pgadmin.invariantcontinuum.io  - Database Administration
+#   - keycloak.invariantcontinuum.io - Identity & Access Management
+#   - n8n.invariantcontinuum.io      - Workflow Automation
+#   - npm.invariantcontinuum.io      - Reverse Proxy Manager
 # =============================================================================
 
 name: local-infra
 
 services:
   # ===========================================================================
-  # POSTGRESQL - RELATIONAL DATABASE
+  # POSTGRESQL - CENTRAL DATABASE SERVER
   # ===========================================================================
   postgres:
     image: postgres:${POSTGRES_VERSION:-16-alpine}
@@ -24,14 +25,16 @@ services:
       - no-new-privileges:true
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-invariant}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      # n8n Database
       N8N_DB_NAME: ${N8N_DB_NAME:-n8n}
       N8N_DB_USER: ${N8N_DB_USER:-n8n}
-      N8N_DB_PASSWORD: ${N8N_DB_PASSWORD:-invariant}
+      N8N_DB_PASSWORD: ${N8N_DB_PASSWORD:-changeme}
+      # Keycloak Database
       KC_DB_NAME: ${KC_DB_NAME:-keycloak}
       KC_DB_USER: ${KC_DB_USER:-keycloak}
-      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-invariant}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-changeme}
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./services/postgres/init:/docker-entrypoint-initdb.d:ro
@@ -47,7 +50,7 @@ services:
       start_period: 15s
 
   # ===========================================================================
-  # PGADMIN - POSTGRESQL ADMINISTRATION
+  # PGADMIN - PASSWORD-LESS DATABASE ADMINISTRATION
   # ===========================================================================
   pgadmin:
     image: dpage/pgadmin4:${PGADMIN_VERSION:-latest}
@@ -66,8 +69,8 @@ services:
         chown pgadmin:root /tmp/pgpassfile
         /entrypoint.sh
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${ADMIN_EMAIL:-admin@your-domain.com}
-      PGADMIN_DEFAULT_PASSWORD: ${ADMIN_PASSWORD:-invariant}
+      PGADMIN_DEFAULT_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
+      PGADMIN_DEFAULT_PASSWORD: ${ADMIN_PASSWORD:-changeme}
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
       PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
@@ -91,6 +94,7 @@ services:
 
   # ===========================================================================
   # KEYCLOAK - IDENTITY & ACCESS MANAGEMENT
+  # Uses PostgreSQL for data storage
   # ===========================================================================
   keycloak:
     image: quay.io/keycloak/keycloak:${KC_VERSION:-latest}
@@ -104,13 +108,13 @@ services:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/${KC_DB_NAME:-keycloak}
       KC_DB_USERNAME: ${KC_DB_USER:-keycloak}
-      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-invariant}
-      KC_HOSTNAME: ${KC_SUBDOMAIN:-keycloak}.${DOMAIN_NAME:-your-domain.com}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-changeme}
+      KC_HOSTNAME: ${KC_SUBDOMAIN:-keycloak}.${DOMAIN_NAME:-invariantcontinuum.io}
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
       KEYCLOAK_ADMIN: ${ADMIN_USER:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-invariant}
+      KEYCLOAK_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
     volumes:
       - ./services/keycloak/themes/invariant:/opt/keycloak/themes/invariant:ro
       - ./services/keycloak/invariant-realm.json:/opt/keycloak/data/import/invariant-realm.json:ro
@@ -130,6 +134,7 @@ services:
 
   # ===========================================================================
   # N8N - WORKFLOW AUTOMATION
+  # Uses PostgreSQL for data storage
   # ===========================================================================
   n8n:
     image: n8nio/n8n:${N8N_VERSION:-latest}
@@ -139,22 +144,23 @@ services:
     security_opt:
       - no-new-privileges:true
     environment:
-      N8N_HOST: ${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-your-domain.com}
+      N8N_HOST: ${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}
       N8N_PORT: 5678
-      N8N_PROTOCOL: ${N8N_PROTOCOL:-https}
-      N8N_EDITOR_BASE_URL: ${N8N_PROTOCOL:-https}://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-your-domain.com}/
-      WEBHOOK_URL: ${N8N_PROTOCOL:-https}://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-your-domain.com}/
-      N8N_DEFAULT_USER_EMAIL: ${ADMIN_EMAIL:-admin@your-domain.com}
-      N8N_DEFAULT_USER_PASSWORD: ${ADMIN_PASSWORD:-invariant}
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      N8N_EDITOR_BASE_URL: ${N8N_PROTOCOL:-http}://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}/
+      WEBHOOK_URL: ${N8N_PROTOCOL:-http}://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}/
+      N8N_DEFAULT_USER_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
+      N8N_DEFAULT_USER_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      # PostgreSQL Database Configuration
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: postgres
       DB_POSTGRESDB_PORT: 5432
       DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME:-n8n}
       DB_POSTGRESDB_USER: ${N8N_DB_USER:-n8n}
-      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD:-invariant}
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD:-changeme}
       GENERIC_TIMEZONE: ${TZ:-UTC}
       N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "false"
-      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-changeme}
       N8N_SECURE_COOKIE: "false"
     volumes:
       - n8n-data:/home/node/.n8n
@@ -174,6 +180,7 @@ services:
 
   # ===========================================================================
   # NGINX PROXY MANAGER - REVERSE PROXY & SSL
+  # Note: Uses SQLite (NPM doesn't support PostgreSQL)
   # ===========================================================================
   nginx-proxy-manager:
     image: jc21/nginx-proxy-manager:${NPM_VERSION:-latest}
