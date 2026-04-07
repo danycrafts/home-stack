@@ -16,6 +16,7 @@ services:
     volumes:
       - ./services/keycloak/invariant-realm.json:/opt/keycloak/data/import/invariant-realm.json:ro
       - ./services/keycloak/master-realm.json:/opt/keycloak/data/import/master-realm.json:ro
+      - ./services/keycloak/substrate-realm.json:/opt/keycloak/data/import/substrate-realm.json:ro
     ports:
       - "${KC_PORT:-8080}:8080"
     depends_on:
