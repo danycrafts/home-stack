@@ -50,7 +50,7 @@ services:
       start_period: 15s
 
   # ===========================================================================
-  # PGADMIN - DATABASE ADMINISTRATION WITH KEYCLOAK OAUTH
+  # PGADMIN - DATABASE ADMINISTRATION WITH KEYCLOAK OAUTH (HTTPS)
   # ===========================================================================
   pgadmin:
     image: dpage/pgadmin4:${PGADMIN_VERSION:-latest}
@@ -147,7 +147,7 @@ services:
       start_period: 90s
 
   # ===========================================================================
-  # N8N - WORKFLOW AUTOMATION WITH KEYCLOAK OAUTH
+  # N8N - WORKFLOW AUTOMATION WITH KEYCLOAK OAUTH (HTTPS)
   # Uses PostgreSQL for data storage
   # ===========================================================================
   n8n:

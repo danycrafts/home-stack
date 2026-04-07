@@ -83,12 +83,15 @@ docker compose --profile provision up npm-provisioner
 ## Access URLs
 
 ### Via Domain (requires /etc/hosts or DNS)
+All services use HTTPS with SSL forced:
 ```
-http://pgadmin.invariantcontinuum.io
-http://auth.invariantcontinuum.io
-http://n8n.invariantcontinuum.io
-http://npm.invariantcontinuum.io
+https://pgadmin.invariantcontinuum.io
+https://auth.invariantcontinuum.io
+https://n8n.invariantcontinuum.io
+https://npm.invariantcontinuum.io
 ```
+
+**Note:** SSL certificates must be configured via NPM UI or use Let's Encrypt.
 
 Add to `/etc/hosts`:
 ```

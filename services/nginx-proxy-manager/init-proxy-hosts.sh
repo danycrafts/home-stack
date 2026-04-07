@@ -1,6 +1,7 @@
 #!/bin/bash
 # =============================================================================
 # Initialize Nginx Proxy Manager via REST API (IaC)
+# All proxy hosts use HTTPS with SSL forced
 # =============================================================================
 set -e
 
@@ -16,6 +17,7 @@ NPM_SUBDOMAIN="${NPM_ADMIN_SUBDOMAIN:-npm}"
 echo "============================================================================="
 echo "  NPM IaC Provisioner"
 echo "  Domain: ${DOMAIN}"
+echo "  HTTPS: Enabled (SSL Forced)"
 echo "============================================================================="
 echo ""
 
@@ -72,8 +74,8 @@ fi
 echo "✓ Authenticated as ${ADMIN_EMAIL}"
 echo ""
 
-# ─── Helper: create proxy host if not exists ──────────────────────────────────
-create_proxy_host() {
+# ─── Helper: create proxy host with HTTPS ─────────────────────────────────────
+create_proxy_host_https() {
     local subdomain=$1
     local forward_host=$2
     local forward_port=$3
@@ -89,6 +91,7 @@ create_proxy_host() {
         return 0
     fi
 
+    # Create proxy host with SSL forced (certificates must be created separately or use NPM UI)
     curl -sf -X POST "${NPM_URL}/api/nginx/proxy-hosts" \
         -H "Authorization: Bearer ${TOKEN}" \
         -H "Content-Type: application/json" \
@@ -99,33 +102,39 @@ create_proxy_host() {
             \"forward_port\":${forward_port},
             \"block_exploits\":true,
             \"allow_websocket_upgrade\":true,
-            \"http2_support\":false,
-            \"caching_enabled\":false,
-            \"ssl_forced\":false,
-            \"hsts_enabled\":false,
-            \"hsts_subdomains\":false,
+            \"http2_support\":true,
+            \"caching_enabled\":true,
+            \"ssl_forced\":true,
+            \"hsts_enabled\":true,
+            \"hsts_subdomains\":true,
+            \"trust_forwarded_proto\":true,
             \"enabled\":true,
             \"meta\":{\"letsencrypt_agree\":false,\"dns_challenge\":false}
         }" >/dev/null
 
-    echo "  ✓ ${fqdn} → ${forward_host}:${forward_port}"
+    echo "  ✓ ${fqdn} → ${forward_host}:${forward_port} (HTTPS)"
 }
 
-# ─── Create proxy hosts ───────────────────────────────────────────────────────
+# ─── Create proxy hosts with HTTPS ────────────────────────────────────────────
 echo "🌐 Provisioning proxy hosts for domain: ${DOMAIN}"
-create_proxy_host "${PGADMIN_SUBDOMAIN}" "pgadmin" 80
-create_proxy_host "${KC_SUBDOMAIN}"      "keycloak" 8080
-create_proxy_host "${N8N_SUBDOMAIN}"     "n8n"     5678
-create_proxy_host "${NPM_SUBDOMAIN}"     "nginx-proxy-manager" 81
+echo "   (SSL Forced, HTTP/2, HSTS, Caching enabled)"
+echo ""
+create_proxy_host_https "${PGADMIN_SUBDOMAIN}" "pgadmin" 80
+create_proxy_host_https "${KC_SUBDOMAIN}"      "keycloak" 8080
+create_proxy_host_https "${N8N_SUBDOMAIN}"     "n8n"     5678
+create_proxy_host_https "${NPM_SUBDOMAIN}"     "nginx-proxy-manager" 81
 
 echo ""
 echo "============================================================================="
 echo "  ✓ IaC Provisioning Complete"
 echo "============================================================================="
 echo ""
-echo "Access your services:"
-echo "  → http://${PGADMIN_SUBDOMAIN}.${DOMAIN}"
-echo "  → http://${KC_SUBDOMAIN}.${DOMAIN}"
-echo "  → http://${N8N_SUBDOMAIN}.${DOMAIN}"
-echo "  → http://${NPM_SUBDOMAIN}.${DOMAIN}"
+echo "Access your services (HTTPS):"
+echo "  → https://${PGADMIN_SUBDOMAIN}.${DOMAIN}"
+echo "  → https://${KC_SUBDOMAIN}.${DOMAIN}"
+echo "  → https://${N8N_SUBDOMAIN}.${DOMAIN}"
+echo "  → https://${NPM_SUBDOMAIN}.${DOMAIN}"
+echo ""
+echo "Note: SSL certificates must be configured separately via NPM UI"
+echo "      or use Let's Encrypt DNS challenge for automatic certificates."
 echo ""
