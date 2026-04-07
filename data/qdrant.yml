@@ -9,9 +9,6 @@ services:
       - "${QDRANT_GRPC_PORT:-6334}:6334"
     networks:
       - infra-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    # Note: Healthcheck disabled - Qdrant image doesn't include curl/wget
+    # Service health can be verified via: curl http://localhost:6333/readyz
     restart: unless-stopped

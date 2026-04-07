@@ -23,10 +23,6 @@ services:
         condition: service_healthy
     networks:
       - infra-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+    # Note: Healthcheck disabled - Keycloak image doesn't include curl/wget
+    # Service health can be verified via: curl http://localhost:8080/
     restart: unless-stopped

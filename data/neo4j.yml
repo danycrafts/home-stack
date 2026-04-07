@@ -15,9 +15,6 @@ services:
       - "${NEO4J_BOLT_PORT:-7687}:7687"
     networks:
       - infra-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:7474 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    # Note: Healthcheck disabled - Neo4j image wget may not be available during startup
+    # Service health can be verified via: curl http://localhost:7474
     restart: unless-stopped
