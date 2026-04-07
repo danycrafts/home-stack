@@ -1,5 +1,5 @@
 # =============================================================================
-# LOCAL INFRASTRUCTURE - Complete Stack
+# LOCAL INFRASTRUCTURE - Complete Stack (IaC Provisioned)
 # Services: PostgreSQL + PgAdmin + Keycloak + n8n + Nginx Proxy Manager
 # =============================================================================
 # Domain: invariantcontinuum.io
@@ -208,13 +208,51 @@ services:
       retries: 3
       start_period: 30s
 
+  # ===========================================================================
+  # NPM-PROVISIONER - IaC PROVISIONING CONTAINER
+  # Runs once to configure NPM via API, then exits
+  # ===========================================================================
+  npm-provisioner:
+    image: alpine/curl:latest
+    container_name: local-npm-provisioner
+    restart: "no"
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME:-invariantcontinuum.io}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      PGADMIN_SUBDOMAIN: ${PGADMIN_SUBDOMAIN:-pgadmin}
+      KC_SUBDOMAIN: ${KC_SUBDOMAIN:-keycloak}
+      N8N_SUBDOMAIN: ${N8N_SUBDOMAIN:-n8n}
+      NPM_ADMIN_SUBDOMAIN: ${NPM_ADMIN_SUBDOMAIN:-npm}
+    volumes:
+      - ./services/nginx-proxy-manager/init-proxy-hosts.sh:/provision.sh:ro
+    command: >
+      sh -c "
+        echo '⏳ Waiting for Nginx Proxy Manager to be ready...' &&
+        sleep 15 &&
+        until curl -sf http://nginx-proxy-manager:81/api/ >/dev/null 2>&1; do
+          echo '  ...waiting for NPM API' &&
+          sleep 5
+        done &&
+        echo '✓ NPM is ready, starting provision...' &&
+        chmod +x /provision.sh &&
+        /provision.sh
+      "
+    depends_on:
+      nginx-proxy-manager:
+        condition: service_healthy
+    networks:
+      - infra-network
+    profiles:
+      - provision
+
 volumes:
   postgres-data:
     name: local-postgres-data
   pgadmin-data:
     name: local-pgadmin-data
   n8n-data:
-    name: local-n8n-data
+      name: local-n8n-data
   npm-data:
     name: local-npm-data
   npm-letsencrypt:

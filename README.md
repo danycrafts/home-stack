@@ -26,27 +26,59 @@ All databases are hosted in the central PostgreSQL instance:
 
 ## Quick Start
 
-1. **Configure environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env if needed (defaults to invariantcontinuum.io)
-   ```
+### Using Make (Recommended)
 
-2. **Start all services:**
-   ```bash
-   docker compose up -d
-   ```
+```bash
+# Deploy everything (services + IaC provisioning)
+make deploy
 
-3. **Wait for services to be healthy (about 60 seconds):**
-   ```bash
-   docker compose ps
-   ```
+# Or step by step:
+make up        # Start services
+make provision # Run IaC provisioning (creates proxy hosts)
+```
 
-4. **Access services via localhost:**
-   - PgAdmin: http://localhost:5050
-   - Keycloak: http://localhost:8080
-   - n8n: http://localhost:5678
-   - NPM: http://localhost:81
+### Using Docker Compose Directly
+
+```bash
+# 1. Configure environment
+cp .env.example .env
+# Edit .env if needed (defaults to invariantcontinuum.io)
+
+# 2. Start core services
+docker compose up -d
+
+# 3. Wait for services to be healthy (~60 seconds)
+docker compose ps
+
+# 4. Run IaC provisioning (creates proxy hosts automatically)
+docker compose --profile provision up -d npm-provisioner
+
+# 5. Check provisioner logs
+docker compose --profile provision logs npm-provisioner
+```
+
+## IaC Provisioning
+
+The stack includes **Infrastructure as Code** provisioning via the `npm-provisioner` service:
+
+- **Automatically configures** Nginx Proxy Manager via REST API
+- **Creates proxy hosts** for all services:
+  - `pgadmin.invariantcontinuum.io` → pgadmin:80
+  - `keycloak.invariantcontinuum.io` → keycloak:8080
+  - `n8n.invariantcontinuum.io` → n8n:5678
+  - `npm.invariantcontinuum.io` → nginx-proxy-manager:81
+- **Idempotent** - can be run multiple times safely
+- **Sets admin credentials** from environment variables
+
+### Provision Manually
+
+```bash
+# Using Make
+make provision
+
+# Or using Docker Compose
+docker compose --profile provision up npm-provisioner
+```
 
 ## Access URLs
 
@@ -116,19 +148,29 @@ Password: changeme (from .env)
 | `KC_DB_PASSWORD` | Keycloak database password | `changeme` |
 | `N8N_ENCRYPTION_KEY` | n8n encryption key | `changeme` |
 
-## Data Persistence
-
-- `services/postgres/volumes/data/` - PostgreSQL data
-- `services/postgres/volumes/pgadmin/` - PgAdmin data
-- `services/n8n/` - n8n workflows (SQLite for workflows, PostgreSQL for execution data)
-- `services/nginx-proxy-manager/data/` - NPM config
-- `services/nginx-proxy-manager/letsencrypt/` - SSL certificates
-
-## Useful Commands
+## Makefile Commands
 
 ```bash
-# Start all services
+make help       # Show all available commands
+make up         # Start all services
+make provision  # Run IaC provisioning
+make deploy     # Start services and provision (full deploy)
+make down       # Stop all services
+make reset      # Stop and remove all data (WARNING: destructive!)
+make logs       # View logs from all services
+make status     # Check service status
+make test       # Test all services are accessible
+make clean      # Remove unused Docker resources
+```
+
+## Docker Compose Commands
+
+```bash
+# Start all core services
 docker compose up -d
+
+# Run IaC provisioning
+docker compose --profile provision up -d npm-provisioner
 
 # View logs
 docker compose logs -f
@@ -139,10 +181,10 @@ docker compose logs -f n8n
 docker compose logs -f keycloak
 
 # Stop all services
-docker compose down
+docker compose --profile provision down
 
 # Stop and remove all data (WARNING: deletes everything!)
-docker compose down -v
+docker compose --profile provision down -v
 
 # Restart a service
 docker compose restart n8n
@@ -151,10 +193,22 @@ docker compose restart n8n
 docker compose ps
 ```
 
+## Data Persistence
+
+- `services/postgres/volumes/data/` - PostgreSQL data
+- `services/postgres/volumes/pgadmin/` - PgAdmin data
+- `services/n8n/` - n8n workflows (SQLite for workflows, PostgreSQL for execution data)
+- `services/nginx-proxy-manager/data/` - NPM config
+- `services/nginx-proxy-manager/letsencrypt/` - SSL certificates
+
 ## Troubleshooting
 
 ### Services not starting
-Check logs: `docker compose logs -f`
+```bash
+make logs
+# or
+docker compose logs -f
+```
 
 ### Database connection issues
 Ensure PostgreSQL is healthy before other services start:
@@ -168,8 +222,49 @@ Servers are auto-configured via `servers.json`. If missing:
 2. Right-click "Servers" → "Register" → "Server"
 3. Use connection details from above
 
+### Proxy hosts not created
+Check provisioner logs:
+```bash
+docker compose --profile provision logs npm-provisioner
+```
+
+Re-run provisioning:
+```bash
+make provision
+```
+
 ### n8n database errors
 Ensure the n8n database and schema are created:
 ```bash
 docker compose logs postgres | grep "Created database"
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Nginx Proxy Manager                       │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐            │
+│  │ pgadmin.*   │ │ keycloak.*  │ │ n8n.*       │            │
+│  │ :80         │ │ :8080       │ │ :5678       │            │
+│  └──────┬──────┘ └──────┬──────┘ └──────┬──────┘            │
+└─────────┼───────────────┼───────────────┼────────────────────┘
+          │               │               │
+          ▼               ▼               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Infrastructure Network                    │
+│                                                              │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐             │
+│  │  PgAdmin   │  │  Keycloak  │  │    n8n     │             │
+│  │            │  │            │  │            │             │
+│  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘             │
+│        │               │               │                     │
+│        └───────────────┼───────────────┘                     │
+│                        │                                     │
+│                        ▼                                     │
+│              ┌──────────────────┐                            │
+│              │    PostgreSQL    │                            │
+│              │  (Central DB)    │                            │
+│              └──────────────────┘                            │
+└─────────────────────────────────────────────────────────────┘
 ```
