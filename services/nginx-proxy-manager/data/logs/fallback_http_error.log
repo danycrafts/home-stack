@@ -1,0 +1,1 @@
+2026/04/07 01:30:51 [error] 202#202: *3 open() "/var/www/html/robots.txt" failed (2: No such file or directory), client: 172.21.0.1, server: localhost-nginx-proxy-manager, request: "GET /robots.txt HTTP/1.0", host: "89.12.49.26"

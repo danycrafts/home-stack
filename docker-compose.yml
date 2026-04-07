@@ -1,0 +1,219 @@
+# =============================================================================
+# LOCAL INFRASTRUCTURE - Postgres + PgAdmin + Keycloak + n8n + Nginx Proxy Manager
+# =============================================================================
+# Domain: invariantcontinuum.io
+# Services:
+#   - pgadmin.invariantcontinuum.io
+#   - keycloak.invariantcontinuum.io
+#   - n8n.invariantcontinuum.io
+#   - npm.invariantcontinuum.io
+# =============================================================================
+
+name: local-infra
+
+services:
+  # ===========================================================================
+  # POSTGRESQL - RELATIONAL DATABASE
+  # ===========================================================================
+  postgres:
+    image: postgres:${POSTGRES_VERSION:-16-alpine}
+    container_name: local-postgres
+    hostname: postgres
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-invariant}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      N8N_DB_NAME: ${N8N_DB_NAME:-n8n}
+      N8N_DB_USER: ${N8N_DB_USER:-n8n}
+      N8N_DB_PASSWORD: ${N8N_DB_PASSWORD:-invariant}
+      KC_DB_NAME: ${KC_DB_NAME:-keycloak}
+      KC_DB_USER: ${KC_DB_USER:-keycloak}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-invariant}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./services/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - infra-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ===========================================================================
+  # PGADMIN - POSTGRESQL ADMINISTRATION
+  # ===========================================================================
+  pgadmin:
+    image: dpage/pgadmin4:${PGADMIN_VERSION:-latest}
+    container_name: local-pgadmin
+    hostname: pgadmin
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: root
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        cp /pgadmin4/pgpassfile /tmp/pgpassfile
+        chmod 600 /tmp/pgpassfile
+        chown pgadmin:root /tmp/pgpassfile
+        /entrypoint.sh
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
+      PGADMIN_DEFAULT_PASSWORD: ${ADMIN_PASSWORD:-invariant}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./services/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./services/pgadmin/pgpass:/pgadmin4/pgpassfile:ro
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - infra-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/misc/ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ===========================================================================
+  # KEYCLOAK - IDENTITY & ACCESS MANAGEMENT
+  # ===========================================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:${KC_VERSION:-latest}
+    container_name: local-keycloak
+    hostname: keycloak
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KC_DB_NAME:-keycloak}
+      KC_DB_USERNAME: ${KC_DB_USER:-keycloak}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-invariant}
+      KC_HOSTNAME: ${KC_SUBDOMAIN:-keycloak}.${DOMAIN_NAME:-invariantcontinuum.io}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KEYCLOAK_ADMIN: ${ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-invariant}
+    volumes:
+      - ./services/keycloak/themes/invariant:/opt/keycloak/themes/invariant:ro
+      - ./services/keycloak/invariant-realm.json:/opt/keycloak/data/import/invariant-realm.json:ro
+    ports:
+      - "${KC_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - infra-network
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q '200'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ===========================================================================
+  # N8N - WORKFLOW AUTOMATION
+  # ===========================================================================
+  n8n:
+    image: n8nio/n8n:${N8N_VERSION:-latest}
+    container_name: local-n8n
+    hostname: n8n
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      N8N_HOST: ${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-https}
+      N8N_EDITOR_BASE_URL: ${N8N_PROTOCOL:-https}://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}/
+      WEBHOOK_URL: ${N8N_PROTOCOL:-https}://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}/
+      N8N_DEFAULT_USER_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
+      N8N_DEFAULT_USER_PASSWORD: ${ADMIN_PASSWORD:-invariant}
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME:-n8n}
+      DB_POSTGRESDB_USER: ${N8N_DB_USER:-n8n}
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD:-invariant}
+      GENERIC_TIMEZONE: ${TZ:-UTC}
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "false"
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      N8N_SECURE_COOKIE: "false"
+    volumes:
+      - n8n-data:/home/node/.n8n
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - infra-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ===========================================================================
+  # NGINX PROXY MANAGER - REVERSE PROXY & SSL
+  # ===========================================================================
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:${NPM_VERSION:-latest}
+    container_name: local-npm
+    hostname: nginx-proxy-manager
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      DB_SQLITE_FILE: /data/database.sqlite
+      DISABLE_IPV6: "true"
+    volumes:
+      - npm-data:/data
+      - npm-letsencrypt:/etc/letsencrypt
+    ports:
+      - "${NPM_HTTP_PORT:-80}:80"
+      - "${NPM_ADMIN_PORT:-81}:81"
+      - "${NPM_HTTPS_PORT:-443}:443"
+    networks:
+      - infra-network
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:81/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres-data:
+    name: local-postgres-data
+  pgadmin-data:
+    name: local-pgadmin-data
+  n8n-data:
+    name: local-n8n-data
+  npm-data:
+    name: local-npm-data
+  npm-letsencrypt:
+    name: local-npm-letsencrypt
+
+networks:
+  infra-network:
+    name: local-infra-network
+    driver: bridge
