@@ -1,0 +1,40 @@
+services:
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:${NPM_VERSION:-latest}
+    container_name: local-npm
+    environment:
+      DB_SQLITE_FILE: "/data/database.sqlite"
+    volumes:
+      - npm-data:/data
+      - npm-letsencrypt:/etc/letsencrypt
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    networks:
+      - infra-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:81/api/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  npm-provisioner:
+    image: curlimages/curl:latest
+    container_name: local-npm-provisioner
+    volumes:
+      - ./services/nginx-proxy-manager/init-proxy-hosts.sh:/init-proxy-hosts.sh:ro
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME:-invariantcontinuum.io}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      NPM_SERVICES: ${NPM_SERVICES:-}
+    command: >
+      sh -c 'sleep 15 && /init-proxy-hosts.sh'
+    depends_on:
+      - nginx-proxy-manager
+    networks:
+      - infra-network
+    restart: "no"

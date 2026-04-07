@@ -1,0 +1,54 @@
+services:
+  nats-1:
+    image: nats:${NATS_VERSION:-2.10-alpine}
+    container_name: local-nats-1
+    command: >
+      --name nats-1
+      --cluster_name local-nats
+      --cluster nats://0.0.0.0:6222
+      --routes nats://nats-2:6222,nats://nats-3:6222
+      --http_port 8222
+      --js
+      --store_dir /data/jetstream
+    volumes:
+      - nats-data:/data/jetstream
+    ports:
+      - "${NATS_PORT:-4222}:4222"
+      - "${NATS_HTTP_PORT:-8222}:8222"
+    networks:
+      - infra-network
+    restart: unless-stopped
+
+  nats-2:
+    image: nats:${NATS_VERSION:-2.10-alpine}
+    container_name: local-nats-2
+    command: >
+      --name nats-2
+      --cluster_name local-nats
+      --cluster nats://0.0.0.0:6222
+      --routes nats://nats-1:6222,nats://nats-3:6222
+      --http_port 8222
+      --js
+      --store_dir /data/jetstream
+    volumes:
+      - nats-data-2:/data/jetstream
+    networks:
+      - infra-network
+    restart: unless-stopped
+
+  nats-3:
+    image: nats:${NATS_VERSION:-2.10-alpine}
+    container_name: local-nats-3
+    command: >
+      --name nats-3
+      --cluster_name local-nats
+      --cluster nats://0.0.0.0:6222
+      --routes nats://nats-1:6222,nats://nats-2:6222
+      --http_port 8222
+      --js
+      --store_dir /data/jetstream
+    volumes:
+      - nats-data-3:/data/jetstream
+    networks:
+      - infra-network
+    restart: unless-stopped

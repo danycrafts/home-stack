@@ -9,10 +9,19 @@ NPM_URL="http://nginx-proxy-manager:81"
 DOMAIN="${DOMAIN_NAME:-invariantcontinuum.io}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@invariantcontinuum.io}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-changeme}"
+
+# Subdomains
 PGADMIN_SUBDOMAIN="${PGADMIN_SUBDOMAIN:-pgadmin}"
 KC_SUBDOMAIN="${KC_SUBDOMAIN:-auth}"
 N8N_SUBDOMAIN="${N8N_SUBDOMAIN:-n8n}"
 NPM_SUBDOMAIN="${NPM_ADMIN_SUBDOMAIN:-npm}"
+MINIO_SUBDOMAIN="${MINIO_SUBDOMAIN:-minio}"
+MINIO_CONSOLE_SUBDOMAIN="${MINIO_CONSOLE_SUBDOMAIN:-minio-console}"
+QDRANT_SUBDOMAIN="${QDRANT_SUBDOMAIN:-qdrant}"
+NEO4J_SUBDOMAIN="${NEO4J_SUBDOMAIN:-neo4j}"
+ELASTIC_SUBDOMAIN="${ELASTIC_SUBDOMAIN:-elasticsearch}"
+NATS_SUBDOMAIN="${NATS_SUBDOMAIN:-nats}"
+REDIS_SUBDOMAIN="${REDIS_SUBDOMAIN:-redis}"
 
 echo "============================================================================="
 echo "  NPM IaC Provisioner"
@@ -119,21 +128,51 @@ create_proxy_host_https() {
 echo "🌐 Provisioning proxy hosts for domain: ${DOMAIN}"
 echo "   (SSL Forced, HTTP/2, HSTS, Caching enabled)"
 echo ""
+
+echo "┌─ Core Services ──────────────────────────────────────────────────────────┐"
 create_proxy_host_https "${PGADMIN_SUBDOMAIN}" "pgadmin" 80
 create_proxy_host_https "${KC_SUBDOMAIN}"      "keycloak" 8080
 create_proxy_host_https "${N8N_SUBDOMAIN}"     "n8n"     5678
 create_proxy_host_https "${NPM_SUBDOMAIN}"     "nginx-proxy-manager" 81
-
+echo "└──────────────────────────────────────────────────────────────────────────┘"
 echo ""
+
+echo "┌─ Data Services ──────────────────────────────────────────────────────────┐"
+create_proxy_host_https "${REDIS_SUBDOMAIN}"          "redis"          6379
+create_proxy_host_https "${MINIO_SUBDOMAIN}"          "minio"          9000
+create_proxy_host_https "${MINIO_CONSOLE_SUBDOMAIN}"  "minio"          9001
+create_proxy_host_https "${QDRANT_SUBDOMAIN}"         "qdrant"         6333
+create_proxy_host_https "${NEO4J_SUBDOMAIN}"          "neo4j"          7474
+create_proxy_host_https "${ELASTIC_SUBDOMAIN}"        "elasticsearch"  9200
+create_proxy_host_https "${NATS_SUBDOMAIN}"           "nats-1"         8222
+echo "└──────────────────────────────────────────────────────────────────────────┘"
+echo ""
+
 echo "============================================================================="
 echo "  ✓ IaC Provisioning Complete"
 echo "============================================================================="
 echo ""
 echo "Access your services (HTTPS):"
+echo ""
+echo "Core:"
 echo "  → https://${PGADMIN_SUBDOMAIN}.${DOMAIN}"
 echo "  → https://${KC_SUBDOMAIN}.${DOMAIN}"
 echo "  → https://${N8N_SUBDOMAIN}.${DOMAIN}"
 echo "  → https://${NPM_SUBDOMAIN}.${DOMAIN}"
+echo ""
+echo "Data Services:"
+echo "  → https://${REDIS_SUBDOMAIN}.${DOMAIN}        (Redis)"
+echo "  → https://${MINIO_SUBDOMAIN}.${DOMAIN}        (MinIO API)"
+echo "  → https://${MINIO_CONSOLE_SUBDOMAIN}.${DOMAIN} (MinIO Console)"
+echo "  → https://${QDRANT_SUBDOMAIN}.${DOMAIN}       (Qdrant Vector DB)"
+echo "  → https://${NEO4J_SUBDOMAIN}.${DOMAIN}        (Neo4j Graph DB)"
+echo "  → https://${ELASTIC_SUBDOMAIN}.${DOMAIN}      (Elasticsearch)"
+echo "  → https://${NATS_SUBDOMAIN}.${DOMAIN}         (NATS Monitoring)"
+echo ""
+echo "NATS Cluster (Client ports):"
+echo "  → localhost:4222 (Node 1)"
+echo "  → localhost:4223 (Node 2)"
+echo "  → localhost:4224 (Node 3)"
 echo ""
 echo "Note: SSL certificates must be configured separately via NPM UI"
 echo "      or use Let's Encrypt DNS challenge for automatic certificates."

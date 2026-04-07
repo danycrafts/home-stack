@@ -2,18 +2,18 @@
   "Servers": {
     "1": {
       "Name": "PostgreSQL - Admin",
-      "Group": "Local Infrastructure",
+      "Group": "Core Infrastructure",
       "Host": "postgres",
       "Port": 5432,
       "MaintenanceDB": "postgres",
       "Username": "postgres",
       "PassFile": "/tmp/pgpassfile",
       "SSLMode": "prefer",
-      "DBRestriction": ["postgres"]
+      "DBRestriction": ["postgres", "n8n", "keycloak", "minio"]
     },
     "2": {
       "Name": "n8n Database",
-      "Group": "Local Infrastructure",
+      "Group": "App Databases",
       "Host": "postgres",
       "Port": 5432,
       "MaintenanceDB": "n8n",
@@ -24,7 +24,7 @@
     },
     "3": {
       "Name": "Keycloak Database",
-      "Group": "Local Infrastructure",
+      "Group": "Core Infrastructure",
       "Host": "postgres",
       "Port": 5432,
       "MaintenanceDB": "keycloak",
@@ -32,6 +32,17 @@
       "PassFile": "/tmp/pgpassfile",
       "SSLMode": "prefer",
       "DBRestriction": ["keycloak"]
+    },
+    "4": {
+      "Name": "MinIO Database",
+      "Group": "App Databases",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "minio",
+      "Username": "minio",
+      "PassFile": "/tmp/pgpassfile",
+      "SSLMode": "prefer",
+      "DBRestriction": ["minio"]
     }
   }
 }

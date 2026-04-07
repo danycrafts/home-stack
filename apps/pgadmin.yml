@@ -1,0 +1,26 @@
+services:
+  pgadmin:
+    image: dpage/pgadmin4:${PGADMIN_VERSION:-latest}
+    container_name: local-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_CONFIG_AUTHENTICATION_SOURCES: "['oauth2', 'internal']"
+      PGADMIN_CONFIG_OAUTH2_NAME: "Keycloak"
+      PGADMIN_CONFIG_OAUTH2_CLIENT_ID: "pgadmin"
+      PGADMIN_CONFIG_OAUTH2_CLIENT_SECRET: "pgadmin-client-secret"
+      PGADMIN_CONFIG_OAUTH2_AUTHORIZATION_ENDPOINT: "http://${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}/realms/invariant/protocol/openid-connect/auth"
+      PGADMIN_CONFIG_OAUTH2_TOKEN_ENDPOINT: "http://${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}/realms/invariant/protocol/openid-connect/token"
+      PGADMIN_CONFIG_OAUTH2_USERINFO_ENDPOINT: "http://${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}/realms/invariant/protocol/openid-connect/userinfo"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./services/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./services/pgadmin/pgpass:/pgadmin4/pgpassfile:ro
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      - postgres
+    networks:
+      - infra-network
+    restart: unless-stopped

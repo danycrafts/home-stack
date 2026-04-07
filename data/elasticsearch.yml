@@ -1,0 +1,20 @@
+services:
+  elasticsearch:
+    image: elasticsearch:${ES_VERSION:-8.12.0}
+    container_name: local-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms${ES_HEAP_SIZE:-512m} -Xmx${ES_HEAP_SIZE:-512m}"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports:
+      - "${ES_PORT:-9200}:9200"
+    networks:
+      - infra-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped

@@ -1,0 +1,32 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:${KC_VERSION:-latest}
+    container_name: local-keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KC_DB_NAME:-keycloak}
+      KC_DB_USERNAME: ${KC_DB_USER:-keycloak}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-changeme}
+      KC_HOSTNAME: ${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KEYCLOAK_ADMIN: ${ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+    volumes:
+      - ./services/keycloak/invariant-realm.json:/opt/keycloak/data/import/invariant-realm.json:ro
+      - ./services/keycloak/master-realm.json:/opt/keycloak/data/import/master-realm.json:ro
+    ports:
+      - "${KC_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - infra-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped

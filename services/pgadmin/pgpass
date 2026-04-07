@@ -1,3 +1,4 @@
 postgres:5432:*:postgres:changeme
 postgres:5432:n8n:n8n:changeme
 postgres:5432:keycloak:keycloak:changeme
+postgres:5432:minio:minio:changeme

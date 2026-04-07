@@ -1,0 +1,17 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:${QDRANT_VERSION:-latest}
+    container_name: local-qdrant
+    volumes:
+      - qdrant-data:/qdrant/storage
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
+    networks:
+      - infra-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
