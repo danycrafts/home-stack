@@ -83,7 +83,37 @@ fi
 echo "✓ Authenticated as ${ADMIN_EMAIL}"
 echo ""
 
-# ─── Helper: create proxy host with HTTPS ─────────────────────────────────────
+# ─── Helper: request Let's Encrypt certificate ───────────────────────────────
+request_letsencrypt_cert() {
+    local fqdn=$1
+
+    # Check if cert already exists
+    existing_cert=$(curl -sf "${NPM_URL}/api/nginx/certificates" \
+        -H "Authorization: Bearer ${TOKEN}" | \
+        grep -o "\"${fqdn}\"" | head -1 || echo "")
+
+    if [ -n "$existing_cert" ]; then
+        # Return existing cert ID
+        curl -sf "${NPM_URL}/api/nginx/certificates" \
+            -H "Authorization: Bearer ${TOKEN}" | \
+            python3 -c "import sys,json; certs=json.load(sys.stdin); [print(c['id']) for c in certs if '${fqdn}' in c.get('domain_names',[])]" 2>/dev/null | head -1
+        return 0
+    fi
+
+    # Request new Let's Encrypt certificate
+    cert_response=$(curl -sf -X POST "${NPM_URL}/api/nginx/certificates" \
+        -H "Authorization: Bearer ${TOKEN}" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"domain_names\":[\"${fqdn}\"],
+            \"meta\":{},
+            \"provider\":\"letsencrypt\"
+        }" 2>&1)
+
+    echo "$cert_response" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null
+}
+
+# ─── Helper: create proxy host with HTTPS + Let's Encrypt ────────────────────
 create_proxy_host_https() {
     local subdomain=$1
     local forward_host=$2
@@ -100,7 +130,20 @@ create_proxy_host_https() {
         return 0
     fi
 
-    # Create proxy host with SSL forced (certificates must be created separately or use NPM UI)
+    # Request Let's Encrypt certificate
+    echo "  ⏳ Requesting Let's Encrypt cert for ${fqdn}..."
+    cert_id=$(request_letsencrypt_cert "${fqdn}")
+
+    # Build certificate_id field if cert was obtained
+    local cert_field=""
+    if [ -n "$cert_id" ] && [ "$cert_id" != "null" ]; then
+        cert_field="\"certificate_id\":${cert_id},"
+        echo "  🔒 Certificate obtained (ID: ${cert_id})"
+    else
+        echo "  ⚠  Certificate request failed, creating host without SSL cert"
+    fi
+
+    # Create proxy host with SSL forced + Let's Encrypt cert
     curl -sf -X POST "${NPM_URL}/api/nginx/proxy-hosts" \
         -H "Authorization: Bearer ${TOKEN}" \
         -H "Content-Type: application/json" \
@@ -109,6 +152,7 @@ create_proxy_host_https() {
             \"forward_scheme\":\"http\",
             \"forward_host\":\"${forward_host}\",
             \"forward_port\":${forward_port},
+            ${cert_field}
             \"block_exploits\":true,
             \"allow_websocket_upgrade\":true,
             \"http2_support\":true,
@@ -121,7 +165,7 @@ create_proxy_host_https() {
             \"meta\":{\"letsencrypt_agree\":false,\"dns_challenge\":false}
         }" >/dev/null
 
-    echo "  ✓ ${fqdn} → ${forward_host}:${forward_port} (HTTPS)"
+    echo "  ✓ ${fqdn} → ${forward_host}:${forward_port} (HTTPS + Let's Encrypt)"
 }
 
 # ─── Create proxy hosts with HTTPS ────────────────────────────────────────────
