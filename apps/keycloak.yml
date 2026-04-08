@@ -1,6 +1,6 @@
 services:
   keycloak:
-    image: quay.io/keycloak/keycloak:${KC_VERSION:-latest}
+    image: quay.io/keycloak/keycloak:25.0
     container_name: local-keycloak
     command: start-dev --import-realm
     environment:
@@ -10,7 +10,9 @@ services:
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-changeme}
       KC_HOSTNAME: ${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}
       KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "true"
       KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
       KEYCLOAK_ADMIN: ${ADMIN_USER:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
     volumes:
