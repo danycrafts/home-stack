@@ -4,19 +4,22 @@ services:
     container_name: local-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
-      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_DEFAULT_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_SERVER_JSON_FILE: "/pgadmin4/servers.json"
+      PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
       PGADMIN_CONFIG_AUTHENTICATION_SOURCES: "['oauth2', 'internal']"
-      PGADMIN_CONFIG_OAUTH2_NAME: "Keycloak"
-      PGADMIN_CONFIG_OAUTH2_CLIENT_ID: "pgadmin"
-      PGADMIN_CONFIG_OAUTH2_CLIENT_SECRET: "pgadmin-client-secret"
-      PGADMIN_CONFIG_OAUTH2_AUTHORIZATION_ENDPOINT: "http://${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}/realms/invariant/protocol/openid-connect/auth"
-      PGADMIN_CONFIG_OAUTH2_TOKEN_ENDPOINT: "http://${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}/realms/invariant/protocol/openid-connect/token"
-      PGADMIN_CONFIG_OAUTH2_USERINFO_ENDPOINT: "http://${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}/realms/invariant/protocol/openid-connect/userinfo"
+      PGADMIN_CONFIG_OAUTH2_NAME: "'Keycloak'"
+      PGADMIN_CONFIG_OAUTH2_CLIENT_ID: "'pgadmin'"
+      PGADMIN_CONFIG_OAUTH2_CLIENT_SECRET: "'pgadmin-client-secret'"
+      PGADMIN_CONFIG_OAUTH2_AUTHORIZATION_ENDPOINT: "'http://${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}/realms/invariant/protocol/openid-connect/auth'"
+      PGADMIN_CONFIG_OAUTH2_TOKEN_ENDPOINT: "'http://${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}/realms/invariant/protocol/openid-connect/token'"
+      PGADMIN_CONFIG_OAUTH2_USERINFO_ENDPOINT: "'http://${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}/realms/invariant/protocol/openid-connect/userinfo'"
     volumes:
       - pgadmin-data:/var/lib/pgadmin
-      - ./services/pgadmin/servers.json:/pgadmin4/servers.json:ro
-      - ./services/pgadmin/pgpass:/pgadmin4/pgpassfile:ro
+      - /home/dany/github/danycrafts/home-stack/services/pgadmin/servers.json:/tmp/servers.json:ro
+      - /home/dany/github/danycrafts/home-stack/services/pgadmin/pgpass:/tmp/pgpass:ro
     ports:
       - "${PGADMIN_PORT:-5050}:80"
     depends_on:
@@ -24,3 +27,5 @@ services:
     networks:
       - infra-network
     restart: unless-stopped
+    user: root
+    entrypoint: ["/bin/sh", "-c", "cp /tmp/servers.json /pgadmin4/servers.json && cp /tmp/pgpass /pgadmin4/pgpassfile && chown pgadmin:root /pgadmin4/servers.json /pgadmin4/pgpassfile && chmod 600 /pgadmin4/pgpassfile && exec /entrypoint.sh"]
