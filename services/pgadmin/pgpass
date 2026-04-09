@@ -1,6 +1,6 @@
 postgres:5432:*:postgres:changeme
-postgres:5432:n8n:n8n:changeme
-postgres:5432:keycloak:keycloak:changeme
-postgres:5432:minio:minio:changeme
-postgres:5432:substrate_ingestion:substrate_ingestion:changeme
-postgres:5432:substrate_graph:substrate_graph:changeme
+postgres:5432:*:n8n:changeme
+postgres:5432:*:keycloak:changeme
+postgres:5432:*:minio:changeme
+postgres:5432:*:substrate_ingestion:changeme
+postgres:5432:*:substrate_graph:changeme
