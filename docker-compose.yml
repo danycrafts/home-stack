@@ -5,8 +5,6 @@ include:
   - path: ./core/redis.yml
   - path: ./core/nats.yml
   - path: ./data/minio.yml
-  - path: ./data/qdrant.yml
-  - path: ./data/neo4j.yml
   - path: ./data/elasticsearch.yml
   - path: ./apps/pgadmin.yml
   - path: ./apps/keycloak.yml
@@ -33,10 +31,6 @@ volumes:
     name: local-redis-data
   minio-data:
     name: local-minio-data
-  qdrant-data:
-    name: local-qdrant-data
-  neo4j-data:
-    name: local-neo4j-data
   es-data:
     name: local-es-data
   nats-data:
