@@ -1,7 +1,13 @@
 services:
   postgres:
-    image: postgres:${POSTGRES_VERSION:-16-alpine}
+    build:
+      context: ./services/postgres
+      dockerfile: Dockerfile
+    image: local-postgres:16-age-pgvector
     container_name: local-postgres
+    command: >
+      postgres
+      -c shared_preload_libraries=age
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
