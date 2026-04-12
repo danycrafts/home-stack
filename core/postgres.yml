@@ -1,7 +1,7 @@
 services:
   postgres:
     build:
-      context: ./services/postgres
+      context: ../services/postgres
       dockerfile: Dockerfile
     image: local-postgres:16-age-pgvector
     container_name: local-postgres
@@ -28,7 +28,7 @@ services:
       SUBSTRATE_GRAPH_DB_PASSWORD: ${SUBSTRATE_GRAPH_DB_PASSWORD:-changeme}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./services/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ../services/postgres/init:/docker-entrypoint-initdb.d:ro
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     networks:
