@@ -17,8 +17,6 @@ N8N_SUBDOMAIN="${N8N_SUBDOMAIN:-n8n}"
 NPM_SUBDOMAIN="${NPM_ADMIN_SUBDOMAIN:-npm}"
 MINIO_SUBDOMAIN="${MINIO_SUBDOMAIN:-minio}"
 MINIO_CONSOLE_SUBDOMAIN="${MINIO_CONSOLE_SUBDOMAIN:-minio-console}"
-QDRANT_SUBDOMAIN="${QDRANT_SUBDOMAIN:-qdrant}"
-NEO4J_SUBDOMAIN="${NEO4J_SUBDOMAIN:-neo4j}"
 ELASTIC_SUBDOMAIN="${ELASTIC_SUBDOMAIN:-elasticsearch}"
 NATS_SUBDOMAIN="${NATS_SUBDOMAIN:-nats}"
 REDIS_COMMANDER_SUBDOMAIN="${REDIS_COMMANDER_SUBDOMAIN:-redis-ui}"
@@ -190,8 +188,6 @@ echo "┌─ Data Services ─────────────────�
 create_proxy_host_https "${REDIS_COMMANDER_SUBDOMAIN}" "redis-commander" 8081
 create_proxy_host_https "${MINIO_SUBDOMAIN}"          "minio"          9000
 create_proxy_host_https "${MINIO_CONSOLE_SUBDOMAIN}"  "minio"          9001
-create_proxy_host_https "${QDRANT_SUBDOMAIN}"         "qdrant"         6333
-create_proxy_host_https "${NEO4J_SUBDOMAIN}"          "neo4j"          7474
 create_proxy_host_https "${ELASTIC_SUBDOMAIN}"        "elasticsearch"  9200
 create_proxy_host_https "${NATS_SUBDOMAIN}"           "nats-1"         8222
 echo "└──────────────────────────────────────────────────────────────────────────┘"
@@ -216,8 +212,6 @@ echo "Data Services:"
 echo "  → https://${REDIS_COMMANDER_SUBDOMAIN}.${DOMAIN}   (Redis Commander)"
 echo "  → https://${MINIO_SUBDOMAIN}.${DOMAIN}        (MinIO API)"
 echo "  → https://${MINIO_CONSOLE_SUBDOMAIN}.${DOMAIN} (MinIO Console)"
-echo "  → https://${QDRANT_SUBDOMAIN}.${DOMAIN}       (Qdrant Vector DB)"
-echo "  → https://${NEO4J_SUBDOMAIN}.${DOMAIN}        (Neo4j Graph DB)"
 echo "  → https://${ELASTIC_SUBDOMAIN}.${DOMAIN}      (Elasticsearch)"
 echo "  → https://${NATS_SUBDOMAIN}.${DOMAIN}         (NATS Monitoring)"
 echo ""
