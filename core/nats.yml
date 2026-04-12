@@ -3,15 +3,15 @@ services:
     image: nats:${NATS_VERSION:-2.10-alpine}
     container_name: local-nats-1
     command: >
+      --config /etc/nats/nats-server.conf
       --name nats-1
       --cluster_name local-nats
       --cluster nats://0.0.0.0:6222
       --routes nats://nats-2:6222,nats://nats-3:6222
       --http_port 8222
-      --js
-      --store_dir /data/jetstream
     volumes:
       - nats-data:/data/jetstream
+      - /home/dany/github/danycrafts/home-stack/core/nats-server.conf:/etc/nats/nats-server.conf:ro
     ports:
       - "${NATS_PORT:-4222}:4222"
       - "${NATS_HTTP_PORT:-8222}:8222"
@@ -23,15 +23,15 @@ services:
     image: nats:${NATS_VERSION:-2.10-alpine}
     container_name: local-nats-2
     command: >
+      --config /etc/nats/nats-server.conf
       --name nats-2
       --cluster_name local-nats
       --cluster nats://0.0.0.0:6222
       --routes nats://nats-1:6222,nats://nats-3:6222
       --http_port 8222
-      --js
-      --store_dir /data/jetstream
     volumes:
       - nats-data-2:/data/jetstream
+      - /home/dany/github/danycrafts/home-stack/core/nats-server.conf:/etc/nats/nats-server.conf:ro
     networks:
       - infra-network
     restart: unless-stopped
@@ -40,15 +40,15 @@ services:
     image: nats:${NATS_VERSION:-2.10-alpine}
     container_name: local-nats-3
     command: >
+      --config /etc/nats/nats-server.conf
       --name nats-3
       --cluster_name local-nats
       --cluster nats://0.0.0.0:6222
       --routes nats://nats-1:6222,nats://nats-2:6222
       --http_port 8222
-      --js
-      --store_dir /data/jetstream
     volumes:
       - nats-data-3:/data/jetstream
+      - /home/dany/github/danycrafts/home-stack/core/nats-server.conf:/etc/nats/nats-server.conf:ro
     networks:
       - infra-network
     restart: unless-stopped
