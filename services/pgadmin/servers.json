@@ -1,63 +1,53 @@
 {
   "Servers": {
     "1": {
-      "Name": "PostgreSQL - Admin",
-      "Group": "Core Infrastructure",
-      "Host": "postgres",
+      "Name": "PostgreSQL Admin",
+      "Group": "Core",
+      "Host": "local-postgres",
       "Port": 5432,
       "MaintenanceDB": "postgres",
       "Username": "postgres",
-      "Passfile": "/pgadmin4/pgpassfile",
+      "PassFile": "/pgpassfile",
       "SSLMode": "prefer"
     },
     "2": {
-      "Name": "n8n Database",
-      "Group": "App Databases",
-      "Host": "postgres",
-      "Port": 5432,
-      "MaintenanceDB": "n8n",
-      "Username": "n8n",
-      "Passfile": "/pgadmin4/pgpassfile",
-      "SSLMode": "prefer"
-    },
-    "3": {
-      "Name": "Keycloak Database",
-      "Group": "Core Infrastructure",
-      "Host": "postgres",
+      "Name": "Keycloak",
+      "Group": "Core",
+      "Host": "local-postgres",
       "Port": 5432,
       "MaintenanceDB": "keycloak",
       "Username": "keycloak",
-      "Passfile": "/pgadmin4/pgpassfile",
+      "PassFile": "/pgpassfile",
+      "SSLMode": "prefer"
+    },
+    "3": {
+      "Name": "n8n",
+      "Group": "Core",
+      "Host": "local-postgres",
+      "Port": 5432,
+      "MaintenanceDB": "n8n",
+      "Username": "n8n",
+      "PassFile": "/pgpassfile",
       "SSLMode": "prefer"
     },
     "4": {
-      "Name": "MinIO Database",
-      "Group": "App Databases",
-      "Host": "postgres",
-      "Port": 5432,
-      "MaintenanceDB": "minio",
-      "Username": "minio",
-      "Passfile": "/pgadmin4/pgpassfile",
-      "SSLMode": "prefer"
-    },
-    "5": {
       "Name": "Substrate Ingestion",
       "Group": "Substrate",
-      "Host": "postgres",
+      "Host": "local-postgres",
       "Port": 5432,
       "MaintenanceDB": "substrate_ingestion",
       "Username": "substrate_ingestion",
-      "Passfile": "/pgadmin4/pgpassfile",
+      "PassFile": "/pgpassfile",
       "SSLMode": "prefer"
     },
-    "6": {
+    "5": {
       "Name": "Substrate Graph",
       "Group": "Substrate",
-      "Host": "postgres",
+      "Host": "local-postgres",
       "Port": 5432,
       "MaintenanceDB": "substrate_graph",
       "Username": "substrate_graph",
-      "Passfile": "/pgadmin4/pgpassfile",
+      "PassFile": "/pgpassfile",
       "SSLMode": "prefer"
     }
   }
