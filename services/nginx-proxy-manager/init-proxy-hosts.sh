@@ -180,7 +180,11 @@ echo "└───────────────────────�
 echo ""
 
 echo "┌─ Platform Services ────────────────────────────────────────────────────┐"
-create_proxy_host_https "substrate" "substrate-gateway" 8080
+# Substrate platform: NPM proxies only the frontend (app.*) and Keycloak
+# (auth.*). The gateway, graph-service and ingestion are reachable only
+# over the host network via localhost; the frontend's nginx proxies
+# /api, /jobs, /ingest, /auth and /ws to the gateway on the host port.
+create_proxy_host_https "app" "substrate-frontend" 3000
 echo "└──────────────────────────────────────────────────────────────────────────┘"
 echo ""
 
@@ -206,7 +210,7 @@ echo "  → https://${N8N_SUBDOMAIN}.${DOMAIN}"
 echo "  → https://${NPM_SUBDOMAIN}.${DOMAIN}"
 echo ""
 echo "Platform:"
-echo "  → https://substrate.${DOMAIN}          (Substrate Platform)"
+echo "  → https://app.${DOMAIN}                (Substrate Frontend)"
 echo ""
 echo "Data Services:"
 echo "  → https://${REDIS_COMMANDER_SUBDOMAIN}.${DOMAIN}   (Redis Commander)"
