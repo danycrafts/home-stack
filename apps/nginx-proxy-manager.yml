@@ -22,17 +22,17 @@ services:
     restart: unless-stopped
 
   npm-provisioner:
-    image: curlimages/curl:latest
+    image: alpine:latest
     container_name: local-npm-provisioner
     volumes:
-      - ./services/nginx-proxy-manager/init-proxy-hosts.sh:/init-proxy-hosts.sh:ro
+      - ../services/nginx-proxy-manager/init-proxy-hosts.sh:/init-proxy-hosts.sh:ro
     environment:
       DOMAIN_NAME: ${DOMAIN_NAME:-invariantcontinuum.io}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
       NPM_SERVICES: ${NPM_SERVICES:-}
     command: >
-      sh -c 'sleep 15 && /init-proxy-hosts.sh'
+      sh -c 'apk add --no-cache curl python3 bash >/dev/null 2>&1 && sleep 15 && bash /init-proxy-hosts.sh'
     depends_on:
       - nginx-proxy-manager
     networks:
