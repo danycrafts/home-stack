@@ -78,7 +78,7 @@ The only acceptable exception is an intentionally one-shot helper service whose 
 
 ```bash
 # 1. Navigate to the stack directory
-cd ~/github/danycrafts/home-stack
+cd ~/Desktop/home-stack
 
 # 2. Recreate the target service to verify it starts cleanly
 docker compose -f <path/to/service.yml> up -d --force-recreate <service-name>
