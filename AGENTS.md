@@ -46,7 +46,7 @@ home-stack/
 
 ### 1. ALWAYS Update home-stack-local.md
 
-**Whenever you make ANY changes to the stack, you MUST update `~/github/home-stack-local.md`:**
+**Whenever you make ANY changes to the stack, you MUST update `~/Desktop/home-stack-local.md`:**
 
 - Add/remove services
 - Change credentials or environment variables
@@ -55,6 +55,12 @@ home-stack/
 - Add new proxy hosts
 
 The `home-stack-local.md` file is the source of truth for local service documentation and credentials. It stays on the device (git-ignored) and contains plain-text passwords.
+
+### 1.1 Restart Policy Mandate
+
+All long-lived Docker Compose services in this stack must declare `restart: unless-stopped` so they come back automatically after host or Docker daemon restarts.
+
+The only acceptable exception is an intentionally one-shot helper service whose job should not rerun automatically on boot, such as `npm-provisioner`. Any such exception must be documented in the compose file and in this instruction file.
 
 **What to update in home-stack-local.md:**
 - Service URLs and ports
@@ -163,20 +169,20 @@ git commit -m "docs: update home-stack-local.md with new credentials"
 4. Add environment variables to `.env` and `.env.example`
 5. Add proxy host to `init-proxy-hosts.sh` (if public)
 6. **Verify service starts cleanly** (see rule #2)
-7. **Update `~/github/home-stack-local.md`** with service details
+7. **Update `~/Desktop/home-stack-local.md`** with service details
 8. Commit changes
 
 ### Update Service Configuration
 
 1. Modify the compose file
 2. **Recreate the service** and verify no errors
-3. **Update `~/github/home-stack-local.md`** if URLs/ports/credentials changed
+3. **Update `~/Desktop/home-stack-local.md`** if URLs/ports/credentials changed
 4. Commit changes
 
 ### Update Credentials
 
 1. Change in `.env`
-2. **Update `~/github/home-stack-local.md`** with new credentials
+2. **Update `~/Desktop/home-stack-local.md`** with new credentials
 3. Recreate affected services to apply changes
 4. Verify services reconnect properly
 
