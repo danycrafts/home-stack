@@ -59,20 +59,19 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "redirectUris": [
-        "http://localhost:3000/*",
-        "https://substrate.invariantcontinuum.io/*",
-        "https://app.invariantcontinuum.io/*"
+        "http://localhost:3535/*"
       ],
       "webOrigins": [
-        "http://localhost:3000",
-        "https://substrate.invariantcontinuum.io",
-        "https://app.invariantcontinuum.io"
+        "http://localhost:3535",
+        "+"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256"
       },
       "protocol": "openid-connect",
-      "fullScopeAllowed": true
+      "fullScopeAllowed": true,
+      "rootUrl": "http://localhost:3535",
+      "baseUrl": "http://localhost:3535"
     },
     {
       "clientId": "substrate-gateway",
@@ -83,7 +82,10 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "secret": "substrate-gateway-secret",
-      "protocol": "openid-connect"
+      "protocol": "openid-connect",
+      "webOrigins": [
+        "http://localhost:3535"
+      ]
     }
   ],
   "scopeMappings": [],
