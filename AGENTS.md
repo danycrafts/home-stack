@@ -200,6 +200,7 @@ git commit -m "docs: update home-stack-local.md with new credentials"
 | NATS-3 | `core/nats.yml` | `local-nats-3` | HTTP 8222 |
 | Keycloak | `apps/keycloak.yml` | `local-keycloak` | HTTP 8080 |
 | n8n | `apps/n8n.yml` | `local-n8n` | None |
+| n8n Runners | `apps/n8n.yml` | `local-n8n-runners` | None |
 | PgAdmin | `apps/pgadmin.yml` | `local-pgadmin` | None |
 | NPM | `apps/nginx-proxy-manager.yml` | `local-npm` | HTTP 81 |
 | MinIO | `data/minio.yml` | `local-minio` | HTTP 9000 |

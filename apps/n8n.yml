@@ -9,6 +9,10 @@ services:
       N8N_EXTERNAL_AUTH_OAUTH2_ISSUER_URL: http://${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}/realms/invariant
       N8N_EXTERNAL_AUTH_OAUTH2_CLIENT_ID: n8n
       N8N_EXTERNAL_AUTH_OAUTH2_CLIENT_SECRET: n8n-client-secret
+      N8N_RUNNERS_MODE: external
+      N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN:-change-me-runner-token}
+      N8N_RUNNERS_BROKER_LISTEN_ADDRESS: 0.0.0.0
+      N8N_NATIVE_PYTHON_RUNNER: "true"
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: postgres
       DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME:-n8n}
@@ -23,6 +27,19 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_started
+    networks:
+      - infra-network
+    restart: unless-stopped
+
+  n8n-runners:
+    image: n8nio/runners:${N8N_VERSION:-latest}
+    container_name: local-n8n-runners
+    environment:
+      N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN:-change-me-runner-token}
+      N8N_RUNNERS_TASK_BROKER_URI: http://n8n:5679
+      N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT: "15"
+    depends_on:
+      - n8n
     networks:
       - infra-network
     restart: unless-stopped
