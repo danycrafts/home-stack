@@ -238,12 +238,17 @@ echo "🌐 Provisioning ${APP_FQDN} → substrate-frontend:3000"
 echo "   (SSL Forced, HTTP/2, HSTS, Caching enabled)"
 echo ""
 
-# Advanced nginx config for app: prevent internal port 3000 from leaking in
-# redirects and ensure X-Forwarded-Port is set to 443 for the backend.
+# Advanced nginx config for app:
+#   - prevent internal port 3000 from leaking into Location redirects
+#   - set X-Forwarded-Port/Host/Proto so the frontend nginx AND Keycloak
+#     (which is reached via same-origin /auth/) build correct absolute
+#     URLs for discovery, redirect_uri, post_logout, etc.
 APP_ADVANCED_CONFIG='proxy_redirect http://$host:3000/ /;
 proxy_redirect https://$host:3000/ /;
 proxy_redirect http://$host:3000 /;
 proxy_redirect https://$host:3000 /;
+proxy_set_header X-Forwarded-Host $host;
+proxy_set_header X-Forwarded-Proto $scheme;
 proxy_set_header X-Forwarded-Port 443;'
 
 create_proxy_host_https "${APP_SUBDOMAIN}" "substrate-frontend" 3000 "$APP_ADVANCED_CONFIG"
