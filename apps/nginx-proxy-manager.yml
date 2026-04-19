@@ -27,10 +27,14 @@ services:
     volumes:
       - ../services/nginx-proxy-manager/init-proxy-hosts.sh:/init-proxy-hosts.sh:ro
     environment:
+      # Only the Substrate frontend is proxied publicly — Keycloak, pgAdmin,
+      # n8n, NPM admin, MinIO, Elasticsearch, NATS and Redis Commander all
+      # remain on localhost. The provisioner script prunes any stale
+      # proxy hosts left over from prior runs that exposed those services.
       DOMAIN_NAME: ${DOMAIN_NAME:-invariantcontinuum.io}
+      APP_SUBDOMAIN: ${APP_SUBDOMAIN:-app}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
-      NPM_SERVICES: ${NPM_SERVICES:-}
     command: >
       sh -c 'apk add --no-cache curl python3 bash >/dev/null 2>&1 && sleep 15 && bash /init-proxy-hosts.sh'
     depends_on:

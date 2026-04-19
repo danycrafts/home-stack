@@ -10,16 +10,12 @@ DOMAIN="${DOMAIN_NAME:-invariantcontinuum.io}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@invariantcontinuum.io}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-changeme}"
 
-# Subdomains
-PGADMIN_SUBDOMAIN="${PGADMIN_SUBDOMAIN:-pgadmin}"
-KC_SUBDOMAIN="${KC_SUBDOMAIN:-auth}"
-N8N_SUBDOMAIN="${N8N_SUBDOMAIN:-n8n}"
-NPM_SUBDOMAIN="${NPM_ADMIN_SUBDOMAIN:-npm}"
-MINIO_SUBDOMAIN="${MINIO_SUBDOMAIN:-minio}"
-MINIO_CONSOLE_SUBDOMAIN="${MINIO_CONSOLE_SUBDOMAIN:-minio-console}"
-ELASTIC_SUBDOMAIN="${ELASTIC_SUBDOMAIN:-elasticsearch}"
-NATS_SUBDOMAIN="${NATS_SUBDOMAIN:-nats}"
-REDIS_COMMANDER_SUBDOMAIN="${REDIS_COMMANDER_SUBDOMAIN:-redis-ui}"
+# Only the Substrate frontend is exposed publicly. Every other service
+# (Keycloak, pgAdmin, n8n, MinIO, Elasticsearch, NATS, Redis Commander,
+# NPM admin) remains reachable on localhost only. The frontend's own
+# nginx proxies /api, /jobs, /ingest, /auth, /ws to the gateway over
+# the host port.
+APP_SUBDOMAIN="${APP_SUBDOMAIN:-app}"
 
 echo "============================================================================="
 echo "  NPM IaC Provisioner"
@@ -203,24 +199,45 @@ create_proxy_host_https() {
     fi
 }
 
-# ─── Create proxy hosts with HTTPS ────────────────────────────────────────────
-echo "🌐 Provisioning proxy hosts for domain: ${DOMAIN}"
+# ─── Prune any proxy hosts that aren't app.<DOMAIN> ──────────────────────────
+# NPM persists proxy hosts in its SQLite volume, so previous runs may have
+# left `auth.`, `pgadmin.`, `n8n.`, etc. behind. Walk the live list and
+# delete anything whose FQDN isn't our one desired host — otherwise
+# Keycloak & friends would remain publicly reachable after this change.
+APP_FQDN="${APP_SUBDOMAIN}.${DOMAIN}"
+
+echo "🧹 Pruning any proxy hosts other than ${APP_FQDN}..."
+hosts_json=$(curl -sf "${NPM_URL}/api/nginx/proxy-hosts" \
+    -H "Authorization: Bearer ${TOKEN}" || echo "[]")
+
+to_delete=$(echo "$hosts_json" | python3 -c "
+import json, sys
+hosts = json.load(sys.stdin)
+keep = '${APP_FQDN}'
+for h in hosts:
+    names = h.get('domain_names', [])
+    # Delete a host iff none of its FQDNs match the keep-list.
+    if not any(n == keep for n in names):
+        print(f\"{h['id']}|{','.join(names)}\")
+" 2>/dev/null || echo "")
+
+if [ -z "$to_delete" ]; then
+    echo "  ✓ Nothing to prune."
+else
+    while IFS='|' read -r host_id host_names; do
+        [ -z "$host_id" ] && continue
+        echo "  🗑  Deleting proxy host ${host_names} (ID: ${host_id})"
+        curl -sf -X DELETE "${NPM_URL}/api/nginx/proxy-hosts/${host_id}" \
+            -H "Authorization: Bearer ${TOKEN}" >/dev/null || true
+    done <<< "$to_delete"
+fi
+echo ""
+
+# ─── Create the single public proxy host ─────────────────────────────────────
+echo "🌐 Provisioning ${APP_FQDN} → substrate-frontend:3000"
 echo "   (SSL Forced, HTTP/2, HSTS, Caching enabled)"
 echo ""
 
-echo "┌─ Core Services ──────────────────────────────────────────────────────────┐"
-create_proxy_host_https "${PGADMIN_SUBDOMAIN}" "pgadmin" 80
-create_proxy_host_https "${KC_SUBDOMAIN}"      "keycloak" 8080
-create_proxy_host_https "${N8N_SUBDOMAIN}"     "n8n"     5678
-create_proxy_host_https "${NPM_SUBDOMAIN}"     "nginx-proxy-manager" 81
-echo "└──────────────────────────────────────────────────────────────────────────┘"
-echo ""
-
-echo "┌─ Platform Services ────────────────────────────────────────────────────┐"
-# Substrate platform: NPM proxies only the frontend (app.*) and Keycloak
-# (auth.*). The gateway, graph-service and ingestion are reachable only
-# over the host network via localhost; the frontend's nginx proxies
-# /api, /jobs, /ingest, /auth and /ws to the gateway on the host port.
 # Advanced nginx config for app: prevent internal port 3000 from leaking in
 # redirects and ensure X-Forwarded-Port is set to 443 for the backend.
 APP_ADVANCED_CONFIG='proxy_redirect http://$host:3000/ /;
@@ -229,46 +246,21 @@ proxy_redirect http://$host:3000 /;
 proxy_redirect https://$host:3000 /;
 proxy_set_header X-Forwarded-Port 443;'
 
-create_proxy_host_https "app" "substrate-frontend" 3000 "$APP_ADVANCED_CONFIG"
-echo "└──────────────────────────────────────────────────────────────────────────┘"
-echo ""
-
-echo "┌─ Data Services ──────────────────────────────────────────────────────────┐"
-create_proxy_host_https "${REDIS_COMMANDER_SUBDOMAIN}" "redis-commander" 8081
-create_proxy_host_https "${MINIO_SUBDOMAIN}"          "minio"          9000
-create_proxy_host_https "${MINIO_CONSOLE_SUBDOMAIN}"  "minio"          9001
-create_proxy_host_https "${ELASTIC_SUBDOMAIN}"        "elasticsearch"  9200
-create_proxy_host_https "${NATS_SUBDOMAIN}"           "nats-1"         8222
-echo "└──────────────────────────────────────────────────────────────────────────┘"
+create_proxy_host_https "${APP_SUBDOMAIN}" "substrate-frontend" 3000 "$APP_ADVANCED_CONFIG"
 echo ""
 
 echo "============================================================================="
 echo "  ✓ IaC Provisioning Complete"
 echo "============================================================================="
 echo ""
-echo "Access your services (HTTPS):"
+echo "Public:"
+echo "  → https://${APP_FQDN}                (Substrate Frontend)"
 echo ""
-echo "Core:"
-echo "  → https://${PGADMIN_SUBDOMAIN}.${DOMAIN}"
-echo "  → https://${KC_SUBDOMAIN}.${DOMAIN}"
-echo "  → https://${N8N_SUBDOMAIN}.${DOMAIN}"
-echo "  → https://${NPM_SUBDOMAIN}.${DOMAIN}"
+echo "Local-only (reach via localhost):"
+echo "  → http://localhost:8080              (Keycloak)"
+echo "  → http://localhost:81                (NPM admin)"
+echo "  → other infra services on their published ports"
 echo ""
-echo "Platform:"
-echo "  → https://app.${DOMAIN}                (Substrate Frontend)"
-echo ""
-echo "Data Services:"
-echo "  → https://${REDIS_COMMANDER_SUBDOMAIN}.${DOMAIN}   (Redis Commander)"
-echo "  → https://${MINIO_SUBDOMAIN}.${DOMAIN}        (MinIO API)"
-echo "  → https://${MINIO_CONSOLE_SUBDOMAIN}.${DOMAIN} (MinIO Console)"
-echo "  → https://${ELASTIC_SUBDOMAIN}.${DOMAIN}      (Elasticsearch)"
-echo "  → https://${NATS_SUBDOMAIN}.${DOMAIN}         (NATS Monitoring)"
-echo ""
-echo "NATS Cluster (Client ports):"
-echo "  → localhost:4222 (Node 1)"
-echo "  → localhost:4223 (Node 2)"
-echo "  → localhost:4224 (Node 3)"
-echo ""
-echo "Note: SSL certificates must be configured separately via NPM UI"
-echo "      or use Let's Encrypt DNS challenge for automatic certificates."
+echo "Note: if Let's Encrypt cert issuance failed, it can be retried"
+echo "      manually from the NPM admin UI."
 echo ""
