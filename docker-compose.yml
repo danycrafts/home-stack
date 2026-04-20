@@ -6,8 +6,6 @@ include:
   - path: ./core/nats.yml
   - path: ./data/minio.yml
   - path: ./data/elasticsearch.yml
-  - path: ./apps/pgadmin.yml
-  - path: ./apps/keycloak.yml
   - path: ./apps/n8n.yml
   - path: ./apps/nginx-proxy-manager.yml
 
@@ -19,8 +17,6 @@ networks:
 volumes:
   postgres-data:
     name: local-postgres-data
-  pgadmin-data:
-    name: local-pgadmin-data
   n8n-data:
     name: local-n8n-data
   npm-data:

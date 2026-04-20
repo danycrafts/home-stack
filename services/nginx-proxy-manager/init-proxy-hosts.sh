@@ -10,12 +10,20 @@ DOMAIN="${DOMAIN_NAME:-invariantcontinuum.io}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@invariantcontinuum.io}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-changeme}"
 
-# Only the Substrate frontend is exposed publicly. Every other service
-# (Keycloak, pgAdmin, n8n, MinIO, Elasticsearch, NATS, Redis Commander,
-# NPM admin) remains reachable on localhost only. The frontend's own
-# nginx proxies /api, /jobs, /ingest, /auth, /ws to the gateway over
-# the host port.
+# Public hosts managed here:
+#   - app.<DOMAIN>      -> Docker host gateway:3535
+#   - auth.<DOMAIN>     -> keycloak:8080
+#   - pgadmin.<DOMAIN>  -> pgadmin:80
+#   - n8n.<DOMAIN>      -> n8n:5678
+# The Substrate frontend keeps handling /api, /jobs, /ingest and /auth
+# internally in its own nginx config. NPM's job is hostname routing and
+# preserving forwarded headers so upstreams generate correct absolute URLs.
 APP_SUBDOMAIN="${APP_SUBDOMAIN:-app}"
+KC_SUBDOMAIN="${KC_SUBDOMAIN:-auth}"
+PGADMIN_SUBDOMAIN="${PGADMIN_SUBDOMAIN:-pgadmin}"
+N8N_SUBDOMAIN="${N8N_SUBDOMAIN:-n8n}"
+APP_FORWARD_HOST=$(getent hosts host.docker.internal 2>/dev/null | awk 'NR==1 {print $1}')
+APP_FORWARD_HOST="${APP_FORWARD_HOST:-host.docker.internal}"
 
 echo "============================================================================="
 echo "  NPM IaC Provisioner"
@@ -199,25 +207,23 @@ create_proxy_host_https() {
     fi
 }
 
-# ─── Prune any proxy hosts that aren't app.<DOMAIN> ──────────────────────────
-# NPM persists proxy hosts in its SQLite volume, so previous runs may have
-# left `auth.`, `pgadmin.`, `n8n.`, etc. behind. Walk the live list and
-# delete anything whose FQDN isn't our one desired host — otherwise
-# Keycloak & friends would remain publicly reachable after this change.
+# ─── Prune any proxy hosts outside the managed public set ────────────────────
 APP_FQDN="${APP_SUBDOMAIN}.${DOMAIN}"
+KC_FQDN="${KC_SUBDOMAIN}.${DOMAIN}"
+PGADMIN_FQDN="${PGADMIN_SUBDOMAIN}.${DOMAIN}"
+N8N_FQDN="${N8N_SUBDOMAIN}.${DOMAIN}"
 
-echo "🧹 Pruning any proxy hosts other than ${APP_FQDN}..."
+echo "🧹 Pruning any proxy hosts outside the managed set..."
 hosts_json=$(curl -sf "${NPM_URL}/api/nginx/proxy-hosts" \
     -H "Authorization: Bearer ${TOKEN}" || echo "[]")
 
 to_delete=$(echo "$hosts_json" | python3 -c "
 import json, sys
 hosts = json.load(sys.stdin)
-keep = '${APP_FQDN}'
+keep = {'${APP_FQDN}', '${KC_FQDN}', '${PGADMIN_FQDN}', '${N8N_FQDN}'}
 for h in hosts:
     names = h.get('domain_names', [])
-    # Delete a host iff none of its FQDNs match the keep-list.
-    if not any(n == keep for n in names):
+    if not any(n in keep for n in names):
         print(f\"{h['id']}|{','.join(names)}\")
 " 2>/dev/null || echo "")
 
@@ -233,25 +239,44 @@ else
 fi
 echo ""
 
-# ─── Create the single public proxy host ─────────────────────────────────────
-echo "🌐 Provisioning ${APP_FQDN} → substrate-frontend:3000"
-echo "   (SSL Forced, HTTP/2, HSTS, Caching enabled)"
+# ─── Create managed public proxy hosts ───────────────────────────────────────
+echo "🌐 Provisioning public proxy hosts"
 echo ""
 
-# Advanced nginx config for app:
-#   - prevent internal port 3000 from leaking into Location redirects
-#   - set X-Forwarded-Port/Host/Proto so the frontend nginx AND Keycloak
-#     (which is reached via same-origin /auth/) build correct absolute
-#     URLs for discovery, redirect_uri, post_logout, etc.
-APP_ADVANCED_CONFIG='proxy_redirect http://$host:3000/ /;
-proxy_redirect https://$host:3000/ /;
-proxy_redirect http://$host:3000 /;
-proxy_redirect https://$host:3000 /;
+# Shared forwarded headers for browser-facing upstreams. NPM sets several of
+# these already, but keeping them explicit in advanced config avoids surprises
+# when upstream apps validate redirect URLs or rely on the original scheme.
+COMMON_PROXY_HEADERS='proxy_set_header Host $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 proxy_set_header X-Forwarded-Host $host;
 proxy_set_header X-Forwarded-Proto $scheme;
 proxy_set_header X-Forwarded-Port 443;'
 
-create_proxy_host_https "${APP_SUBDOMAIN}" "substrate-frontend" 3000 "$APP_ADVANCED_CONFIG"
+APP_ADVANCED_CONFIG='proxy_redirect http://$host:3000/ /;
+proxy_redirect https://$host:3000/ /;
+proxy_redirect http://$host:3000 /;
+proxy_redirect https://$host:3000 /;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection "upgrade";
+'"${COMMON_PROXY_HEADERS}"
+
+KEYCLOAK_ADVANCED_CONFIG='proxy_redirect off;
+'"${COMMON_PROXY_HEADERS}"
+
+PGADMIN_ADVANCED_CONFIG='proxy_redirect off;
+'"${COMMON_PROXY_HEADERS}"
+
+N8N_ADVANCED_CONFIG='proxy_redirect off;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection "upgrade";
+'"${COMMON_PROXY_HEADERS}"
+
+create_proxy_host_https "${APP_SUBDOMAIN}" "${APP_FORWARD_HOST}" 3535 "$APP_ADVANCED_CONFIG"
+# Keycloak and pgAdmin are served by the substrate compose stack (ports 8080 / 5050)
+create_proxy_host_https "${KC_SUBDOMAIN}" "host.docker.internal" 8080 "$KEYCLOAK_ADVANCED_CONFIG"
+create_proxy_host_https "${PGADMIN_SUBDOMAIN}" "host.docker.internal" 5050 "$PGADMIN_ADVANCED_CONFIG"
+create_proxy_host_https "${N8N_SUBDOMAIN}" "n8n" 5678 "$N8N_ADVANCED_CONFIG"
 echo ""
 
 echo "============================================================================="
@@ -260,9 +285,11 @@ echo "==========================================================================
 echo ""
 echo "Public:"
 echo "  → https://${APP_FQDN}                (Substrate Frontend)"
+echo "  → https://${KC_FQDN}                 (Keycloak)"
+echo "  → https://${PGADMIN_FQDN}            (pgAdmin)"
+echo "  → https://${N8N_FQDN}                (n8n)"
 echo ""
-echo "Local-only (reach via localhost):"
-echo "  → http://localhost:8080              (Keycloak)"
+echo "Local admin/debug ports:"
 echo "  → http://localhost:81                (NPM admin)"
 echo "  → other infra services on their published ports"
 echo ""
