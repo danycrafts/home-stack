@@ -4,6 +4,10 @@ services:
     container_name: local-npm
     environment:
       DB_SQLITE_FILE: "/data/database.sqlite"
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      INITIAL_ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
+      INITIAL_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
     volumes:
       - npm-data:/data
       - npm-letsencrypt:/etc/letsencrypt
@@ -11,6 +15,8 @@ services:
       - "80:80"
       - "81:81"
       - "443:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - infra-network
     healthcheck:
@@ -27,18 +33,22 @@ services:
     volumes:
       - ../services/nginx-proxy-manager/init-proxy-hosts.sh:/init-proxy-hosts.sh:ro
     environment:
-      # Only the Substrate frontend is proxied publicly — Keycloak, pgAdmin,
-      # n8n, NPM admin, MinIO, Elasticsearch, NATS and Redis Commander all
-      # remain on localhost. The provisioner script prunes any stale
-      # proxy hosts left over from prior runs that exposed those services.
+      # Managed public proxy hosts: app, auth, pgadmin and n8n. Other infra
+      # services remain reachable on their published localhost ports unless a
+      # proxy host is added deliberately in the provisioner script.
       DOMAIN_NAME: ${DOMAIN_NAME:-invariantcontinuum.io}
       APP_SUBDOMAIN: ${APP_SUBDOMAIN:-app}
+      KC_SUBDOMAIN: ${KC_SUBDOMAIN:-auth}
+      PGADMIN_SUBDOMAIN: ${PGADMIN_SUBDOMAIN:-pgadmin}
+      N8N_SUBDOMAIN: ${N8N_SUBDOMAIN:-n8n}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
     command: >
       sh -c 'apk add --no-cache curl python3 bash >/dev/null 2>&1 && sleep 15 && bash /init-proxy-hosts.sh'
     depends_on:
       - nginx-proxy-manager
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - infra-network
     restart: "no"

@@ -18,10 +18,10 @@ services:
       PGADMIN_CONFIG_OAUTH2_USERINFO_ENDPOINT: "'http://${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}/realms/invariant/protocol/openid-connect/userinfo'"
     volumes:
       - pgadmin-data:/var/lib/pgadmin
-      - /home/dany/github/danycrafts/home-stack/services/pgadmin/servers.json:/tmp/servers.json:ro
-      - /home/dany/github/danycrafts/home-stack/services/pgadmin/pgpass:/tmp/pgpass:ro
+      - ../services/pgadmin/servers.json:/tmp/servers.json:ro
+      - ../services/pgadmin/pgpass:/tmp/pgpass:ro
     ports:
-      - "${PGADMIN_PORT:-5050}:80"
+      - "${PGADMIN_PORT:-15050}:80"
     depends_on:
       - postgres
     networks:

@@ -2,10 +2,10 @@ name: home-stack
 
 include:
   - path: ./core/postgres.yml
-  - path: ./core/redis.yml
-  - path: ./core/nats.yml
-  - path: ./data/minio.yml
-  - path: ./data/elasticsearch.yml
+    #- path: ./core/redis.yml
+    #- path: ./core/nats.yml
+    #- path: ./data/minio.yml
+    #- path: ./data/elasticsearch.yml
   - path: ./apps/n8n.yml
   - path: ./apps/nginx-proxy-manager.yml
 
@@ -16,22 +16,22 @@ networks:
 
 volumes:
   postgres-data:
-    name: local-postgres-data
+   name: local-postgres-data
   n8n-data:
     name: local-n8n-data
   npm-data:
     name: local-npm-data
   npm-letsencrypt:
     name: local-npm-letsencrypt
-  redis-data:
-    name: local-redis-data
-  minio-data:
-    name: local-minio-data
-  es-data:
-    name: local-es-data
-  nats-data:
-    name: local-nats-data
-  nats-data-2:
-    name: local-nats-data-2
-  nats-data-3:
-    name: local-nats-data-3
+      #redis-data:
+      #name: local-redis-data
+      #minio-data:
+      #name: local-minio-data
+      #es-data:
+      #name: local-es-data
+      #nats-data:
+    #name: local-nats-data
+    #nats-data-2:
+    #name: local-nats-data-2
+    #nats-data-3:
+    #name: local-nats-data-3
