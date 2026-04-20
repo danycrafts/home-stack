@@ -22,8 +22,8 @@ APP_SUBDOMAIN="${APP_SUBDOMAIN:-app}"
 KC_SUBDOMAIN="${KC_SUBDOMAIN:-auth}"
 PGADMIN_SUBDOMAIN="${PGADMIN_SUBDOMAIN:-pgadmin}"
 N8N_SUBDOMAIN="${N8N_SUBDOMAIN:-n8n}"
-APP_FORWARD_HOST=$(getent hosts host.docker.internal 2>/dev/null | awk 'NR==1 {print $1}')
-APP_FORWARD_HOST="${APP_FORWARD_HOST:-host.docker.internal}"
+HOST_GATEWAY_IP=$(getent hosts host.docker.internal 2>/dev/null | awk 'NR==1 {print $1}')
+HOST_GATEWAY_IP="${HOST_GATEWAY_IP:-host.docker.internal}"
 
 echo "============================================================================="
 echo "  NPM IaC Provisioner"
@@ -272,10 +272,10 @@ proxy_set_header Upgrade $http_upgrade;
 proxy_set_header Connection "upgrade";
 '"${COMMON_PROXY_HEADERS}"
 
-create_proxy_host_https "${APP_SUBDOMAIN}" "${APP_FORWARD_HOST}" 3535 "$APP_ADVANCED_CONFIG"
+create_proxy_host_https "${APP_SUBDOMAIN}" "${HOST_GATEWAY_IP}" 3535 "$APP_ADVANCED_CONFIG"
 # Keycloak and pgAdmin are served by the substrate compose stack (ports 8080 / 5050)
-create_proxy_host_https "${KC_SUBDOMAIN}" "host.docker.internal" 8080 "$KEYCLOAK_ADVANCED_CONFIG"
-create_proxy_host_https "${PGADMIN_SUBDOMAIN}" "host.docker.internal" 5050 "$PGADMIN_ADVANCED_CONFIG"
+create_proxy_host_https "${KC_SUBDOMAIN}" "${HOST_GATEWAY_IP}" 8080 "$KEYCLOAK_ADVANCED_CONFIG"
+create_proxy_host_https "${PGADMIN_SUBDOMAIN}" "${HOST_GATEWAY_IP}" 5050 "$PGADMIN_ADVANCED_CONFIG"
 create_proxy_host_https "${N8N_SUBDOMAIN}" "n8n" 5678 "$N8N_ADVANCED_CONFIG"
 echo ""
 
