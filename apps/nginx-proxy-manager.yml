@@ -33,12 +33,13 @@ services:
     volumes:
       - ../services/nginx-proxy-manager/init-proxy-hosts.sh:/init-proxy-hosts.sh:ro
     environment:
-      # Managed public proxy hosts: app, auth, pgadmin and n8n. Other infra
+      # Managed public proxy hosts: app, auth, docs, pgadmin and n8n. Other infra
       # services remain reachable on their published localhost ports unless a
       # proxy host is added deliberately in the provisioner script.
       DOMAIN_NAME: ${DOMAIN_NAME:-invariantcontinuum.io}
       APP_SUBDOMAIN: ${APP_SUBDOMAIN:-app}
       KC_SUBDOMAIN: ${KC_SUBDOMAIN:-auth}
+      DOCS_SUBDOMAIN: ${DOCS_SUBDOMAIN:-docs}
       PGADMIN_SUBDOMAIN: ${PGADMIN_SUBDOMAIN:-pgadmin}
       N8N_SUBDOMAIN: ${N8N_SUBDOMAIN:-n8n}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}

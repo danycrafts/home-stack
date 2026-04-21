@@ -13,6 +13,7 @@ ADMIN_PASSWORD="${ADMIN_PASSWORD:-changeme}"
 # Public hosts managed here:
 #   - app.<DOMAIN>      -> Docker host gateway:3535
 #   - auth.<DOMAIN>     -> keycloak:8080
+#   - docs.<DOMAIN>     -> Docker host gateway:8190
 #   - pgadmin.<DOMAIN>  -> pgadmin:80
 #   - n8n.<DOMAIN>      -> n8n:5678
 # The Substrate frontend keeps handling /api, /jobs, /ingest and /auth
@@ -20,6 +21,7 @@ ADMIN_PASSWORD="${ADMIN_PASSWORD:-changeme}"
 # preserving forwarded headers so upstreams generate correct absolute URLs.
 APP_SUBDOMAIN="${APP_SUBDOMAIN:-app}"
 KC_SUBDOMAIN="${KC_SUBDOMAIN:-auth}"
+DOCS_SUBDOMAIN="${DOCS_SUBDOMAIN:-docs}"
 PGADMIN_SUBDOMAIN="${PGADMIN_SUBDOMAIN:-pgadmin}"
 N8N_SUBDOMAIN="${N8N_SUBDOMAIN:-n8n}"
 HOST_GATEWAY_IP=$(getent hosts host.docker.internal 2>/dev/null | awk 'NR==1 {print $1}')
@@ -210,6 +212,7 @@ create_proxy_host_https() {
 # ─── Prune any proxy hosts outside the managed public set ────────────────────
 APP_FQDN="${APP_SUBDOMAIN}.${DOMAIN}"
 KC_FQDN="${KC_SUBDOMAIN}.${DOMAIN}"
+DOCS_FQDN="${DOCS_SUBDOMAIN}.${DOMAIN}"
 PGADMIN_FQDN="${PGADMIN_SUBDOMAIN}.${DOMAIN}"
 N8N_FQDN="${N8N_SUBDOMAIN}.${DOMAIN}"
 
@@ -220,7 +223,7 @@ hosts_json=$(curl -sf "${NPM_URL}/api/nginx/proxy-hosts" \
 to_delete=$(echo "$hosts_json" | python3 -c "
 import json, sys
 hosts = json.load(sys.stdin)
-keep = {'${APP_FQDN}', '${KC_FQDN}', '${PGADMIN_FQDN}', '${N8N_FQDN}'}
+keep = {'${APP_FQDN}', '${KC_FQDN}', '${DOCS_FQDN}', '${PGADMIN_FQDN}', '${N8N_FQDN}'}
 for h in hosts:
     names = h.get('domain_names', [])
     if not any(n in keep for n in names):
@@ -272,9 +275,13 @@ proxy_set_header Upgrade $http_upgrade;
 proxy_set_header Connection "upgrade";
 '"${COMMON_PROXY_HEADERS}"
 
+DOCS_ADVANCED_CONFIG='proxy_redirect off;
+'"${COMMON_PROXY_HEADERS}"
+
 create_proxy_host_https "${APP_SUBDOMAIN}" "${HOST_GATEWAY_IP}" 3535 "$APP_ADVANCED_CONFIG"
 # Keycloak and pgAdmin are served by the substrate compose stack (ports 8080 / 5050)
 create_proxy_host_https "${KC_SUBDOMAIN}" "${HOST_GATEWAY_IP}" 8080 "$KEYCLOAK_ADVANCED_CONFIG"
+create_proxy_host_https "${DOCS_SUBDOMAIN}" "${HOST_GATEWAY_IP}" 8190 "$DOCS_ADVANCED_CONFIG"
 create_proxy_host_https "${PGADMIN_SUBDOMAIN}" "${HOST_GATEWAY_IP}" 5050 "$PGADMIN_ADVANCED_CONFIG"
 create_proxy_host_https "${N8N_SUBDOMAIN}" "n8n" 5678 "$N8N_ADVANCED_CONFIG"
 echo ""
@@ -286,6 +293,7 @@ echo ""
 echo "Public:"
 echo "  → https://${APP_FQDN}                (Substrate Frontend)"
 echo "  → https://${KC_FQDN}                 (Keycloak)"
+echo "  → https://${DOCS_FQDN}               (Substrate Docs)"
 echo "  → https://${PGADMIN_FQDN}            (pgAdmin)"
 echo "  → https://${N8N_FQDN}                (n8n)"
 echo ""
