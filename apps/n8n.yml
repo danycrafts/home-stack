@@ -54,5 +54,7 @@ services:
       - n8n
     networks:
       - infra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
