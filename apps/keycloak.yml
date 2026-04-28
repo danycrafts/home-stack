@@ -1,30 +1,39 @@
 services:
   keycloak:
-    image: quay.io/keycloak/keycloak:25.0
+    image: quay.io/keycloak/keycloak:${KC_VERSION:-26.0}
     container_name: local-keycloak
-    command: start-dev --import-realm
+    command: ["${KC_START_COMMAND:-start}"]
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/${KC_DB_NAME:-keycloak}
       KC_DB_USERNAME: ${KC_DB_USER:-keycloak}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-changeme}
-      KC_HOSTNAME: ${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}
-      KC_HOSTNAME_STRICT: "false"
-      KC_HTTP_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-changeme}
+      KC_HOSTNAME: ${KC_HOSTNAME:-https://auth.invariantcontinuum.io}
+      KC_HOSTNAME_STRICT: ${KC_HOSTNAME_STRICT:-true}
+      KC_HTTP_ENABLED: ${KC_HTTP_ENABLED:-true}
       KC_PROXY_HEADERS: xforwarded
-      KEYCLOAK_ADMIN: ${ADMIN_USER:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
-    volumes:
-      - ../services/keycloak/invariant-realm.json:/opt/keycloak/data/import/invariant-realm.json:ro
-      - ../services/keycloak/master-realm.json:/opt/keycloak/data/import/master-realm.json:ro
-      - ../services/keycloak/substrate-realm.json:/opt/keycloak/data/import/substrate-realm.json:ro
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      # Single-replica deployment: use Infinispan local cache instead of
+      # distributed clustering. Silences JGRP000015 UDP buffer-size
+      # warnings on every startup because the kernel's default
+      # rmem_max/wmem_max are below JGroups' multicast defaults.
+      KC_CACHE: local
     ports:
       - "${KC_PORT:-18080}:8080"
+    volumes:
+      - kc-data:/opt/keycloak/data
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - infra-network
-    # Note: Healthcheck disabled - Keycloak image doesn't include curl/wget
-    # Service health can be verified via: curl http://localhost:8080/
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && head -c 15 <&3 | grep -q '200'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
     restart: unless-stopped

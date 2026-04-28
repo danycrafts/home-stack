@@ -3,12 +3,21 @@ services:
     image: n8nio/n8n:${N8N_VERSION:-latest}
     container_name: local-n8n
     environment:
+      # Public hostname / scheme. NPM terminates TLS at 80/443 and forwards
+      # to this container's 5678 over HTTP, so the editor & webhook URLs
+      # must advertise the HTTPS origin (no port suffix) — not the internal
+      # http://...:5678 form, which would break OAuth callbacks and
+      # webhook signing.
       N8N_HOST: ${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}
+      N8N_PROTOCOL: https
+      N8N_PORT: "5678"
+      N8N_EDITOR_BASE_URL: https://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}
+      WEBHOOK_URL: https://${N8N_SUBDOMAIN:-n8n}.${DOMAIN_NAME:-invariantcontinuum.io}/
+      N8N_PROXY_HOPS: "1"
+      N8N_TRUST_PROXY: "true"
       N8N_BASIC_AUTH_ACTIVE: "false"
-        #N8N_EXTERNAL_AUTH_ENABLED: "true"
-        #N8N_EXTERNAL_AUTH_OAUTH2_ISSUER_URL: http://${KC_SUBDOMAIN:-auth}.${DOMAIN_NAME:-invariantcontinuum.io}/realms/invariant
-        #N8N_EXTERNAL_AUTH_OAUTH2_CLIENT_ID: n8n
-        #N8N_EXTERNAL_AUTH_OAUTH2_CLIENT_SECRET: n8n-client-secret
+      # Community node installation from the Editor UI.
+      N8N_ENABLE_COMMUNITY_NODES: "true"
       N8N_RUNNERS_MODE: external
       N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN:-change-me-runner-token}
       N8N_RUNNERS_BROKER_LISTEN_ADDRESS: 0.0.0.0
