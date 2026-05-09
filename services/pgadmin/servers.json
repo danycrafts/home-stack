@@ -1,53 +1,12 @@
 {
   "Servers": {
     "1": {
-      "Name": "PostgreSQL Admin",
-      "Group": "Core",
-      "Host": "local-postgres",
+      "Name": "home-stack-postgres",
+      "Group": "Servers",
+      "Host": "postgres",
       "Port": 5432,
       "MaintenanceDB": "postgres",
       "Username": "postgres",
-      "PassFile": "/pgadmin4/pgpassfile",
-      "SSLMode": "prefer"
-    },
-    "2": {
-      "Name": "Keycloak",
-      "Group": "Core",
-      "Host": "local-postgres",
-      "Port": 5432,
-      "MaintenanceDB": "keycloak",
-      "Username": "keycloak",
-      "PassFile": "/pgadmin4/pgpassfile",
-      "SSLMode": "prefer"
-    },
-    "3": {
-      "Name": "n8n",
-      "Group": "Core",
-      "Host": "local-postgres",
-      "Port": 5432,
-      "MaintenanceDB": "n8n",
-      "Username": "n8n",
-      "PassFile": "/pgadmin4/pgpassfile",
-      "SSLMode": "prefer"
-    },
-    "4": {
-      "Name": "Substrate Ingestion",
-      "Group": "Substrate",
-      "Host": "local-postgres",
-      "Port": 5432,
-      "MaintenanceDB": "substrate_ingestion",
-      "Username": "substrate_ingestion",
-      "PassFile": "/pgadmin4/pgpassfile",
-      "SSLMode": "prefer"
-    },
-    "5": {
-      "Name": "Substrate Graph",
-      "Group": "Substrate",
-      "Host": "local-postgres",
-      "Port": 5432,
-      "MaintenanceDB": "substrate_graph",
-      "Username": "substrate_graph",
-      "PassFile": "/pgadmin4/pgpassfile",
       "SSLMode": "prefer"
     }
   }

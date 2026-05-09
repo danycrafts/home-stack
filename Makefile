@@ -1,96 +1,56 @@
-# =============================================================================
-# Local Infrastructure Stack - Makefile
-# =============================================================================
+# Home Stack
 
-.PHONY: help up down provision logs status reset test clean
+.PHONY: help up down restart certs logs status reset test clean config
 
-# Default target
 help:
-	@echo "Local Infrastructure Stack - Available Commands:"
+	@echo "Home Stack - Available Commands:"
 	@echo ""
-	@echo "  make up         - Start all services"
-	@echo "  make provision  - Run IaC provisioning (creates proxy hosts)"
-	@echo "  make deploy     - Start services and run provisioning"
-	@echo "  make down       - Stop all services"
-	@echo "  make reset      - Stop and remove all data (WARNING: destructive!)"
-	@echo "  make logs       - View logs from all services"
-	@echo "  make status     - Check service status"
-	@echo "  make test       - Test all services are accessible"
-	@echo "  make clean      - Remove unused Docker resources"
+	@echo "  make up       - Build and start the clean stack"
+	@echo "  make certs    - Issue/refresh Let's Encrypt certificates"
+	@echo "  make down     - Stop services"
+	@echo "  make restart  - Recreate services"
+	@echo "  make reset    - Stop services and remove volumes"
+	@echo "  make config   - Validate compose config"
+	@echo "  make test     - Run local health checks"
+	@echo "  make logs     - Follow logs"
+	@echo "  make status   - Show service status"
+	@echo "  make clean    - Remove unused Docker resources"
 	@echo ""
 
-# Start all core services
 up:
-	@echo "🚀 Starting infrastructure services..."
-	docker compose up -d postgres nginx-proxy-manager
-	@echo "⏳ Waiting for core services to be healthy..."
-	@sleep 10
-	docker compose up -d pgadmin keycloak n8n
-	@echo "✓ Services starting..."
+	docker compose up -d --build --force-recreate
 
-# Run IaC provisioning (creates proxy hosts in NPM)
-provision:
-	@echo "🔧 Running IaC provisioning..."
-	docker compose --profile provision up -d npm-provisioner
-	@sleep 5
-	@echo ""
-	@echo "📋 Provisioner logs:"
-	docker compose --profile provision logs npm-provisioner
+certs:
+	docker compose exec nginx /usr/local/bin/certbot-issue
 
-# Full deploy: start services and provision
-deploy: up
-	@echo ""
-	@echo "⏳ Waiting for services to stabilize..."
-	@sleep 30
-	@$(MAKE) provision
-	@echo ""
-	@echo "✅ Deployment complete!"
-	@$(MAKE) status
-
-# Stop all services
 down:
-	@echo "🛑 Stopping all services..."
-	docker compose --profile provision down
+	docker compose down --remove-orphans
 
-# Stop and remove all data (DESTRUCTIVE!)
+restart:
+	docker compose down --remove-orphans
+	docker compose up -d --build --force-recreate
+
 reset:
-	@echo "⚠️  WARNING: This will delete ALL data!"
-	@read -p "Are you sure? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
-	@echo "🗑️  Removing all services and data..."
-	docker compose --profile provision down -v
-	@echo "✓ All data removed"
+	docker compose down -v --remove-orphans
 
-# View logs
 logs:
 	docker compose logs -f
 
-# Check service status
 status:
-	@echo "============================================================================="
-	@echo "  Service Status"
-	@echo "============================================================================="
 	@docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
 
-# Test all services
-test:
-	@echo "============================================================================="
-	@echo "  Testing Services"
-	@echo "============================================================================="
-	@echo ""
-	@echo -n "PostgreSQL (localhost:5432)... "
-	@nc -z localhost 5432 && echo "✓ OK" || echo "✗ FAILED"
-	@echo -n "PgAdmin (localhost:5050)... "
-	@curl -sf http://localhost:5050 >/dev/null && echo "✓ OK" || echo "✗ FAILED"
-	@echo -n "Keycloak (localhost:8080)... "
-	@curl -sf http://localhost:8080/admin >/dev/null && echo "✓ OK" || echo "✗ FAILED"
-	@echo -n "n8n (localhost:5678)... "
-	@curl -sf http://localhost:5678/healthz >/dev/null && echo "✓ OK" || echo "✗ FAILED"
-	@echo -n "NPM (localhost:81)... "
-	@curl -sf http://localhost:81/api/ >/dev/null && echo "✓ OK" || echo "✗ FAILED"
-	@echo ""
+config:
+	docker compose config --quiet
 
-# Clean up unused Docker resources
+test:
+	docker compose config --quiet
+	curl -fsS http://localhost/healthz >/dev/null
+	curl -kfsS https://nginx.invariantcontinuum.io/healthz --resolve nginx.invariantcontinuum.io:443:127.0.0.1 >/dev/null
+	curl -kfsS https://pgadmin.invariantcontinuum.io/healthz --resolve pgadmin.invariantcontinuum.io:443:127.0.0.1 >/dev/null
+	curl -kfsS https://auth.invariantcontinuum.io/healthz --resolve auth.invariantcontinuum.io:443:127.0.0.1 >/dev/null
+	curl -kfsS https://redis.invariantcontinuum.io/healthz --resolve redis.invariantcontinuum.io:443:127.0.0.1 >/dev/null
+	docker compose exec -T postgres pg_isready -U postgres -d postgres
+	docker compose exec -T redis redis-cli -a "$${REDIS_PASSWORD:-changeme}" ping
+
 clean:
-	@echo "🧹 Cleaning up unused Docker resources..."
 	docker system prune -f
-	@echo "✓ Cleanup complete"

@@ -14,3 +14,11 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Runtime mounts
+services/nginx/logs/*
+!services/nginx/logs/.gitkeep
+services/nginx/letsencrypt/*
+!services/nginx/letsencrypt/.gitkeep
+services/nginx/certbot/www/*
+!services/nginx/certbot/www/.gitkeep

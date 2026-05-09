@@ -1,0 +1,37 @@
+#!/bin/sh
+set -eu
+
+if [ -z "${CERTBOT_DOMAINS:-}" ]; then
+  echo "CERTBOT_DOMAINS is empty; nothing to issue."
+  exit 0
+fi
+
+if [ -z "${CERTBOT_EMAIL:-}" ]; then
+  echo "CERTBOT_EMAIL is required." >&2
+  exit 1
+fi
+
+staging_arg=""
+if [ "${CERTBOT_STAGING:-false}" = "true" ]; then
+  staging_arg="--staging"
+fi
+
+for domain in $CERTBOT_DOMAINS; do
+  if [ ! -s "/etc/letsencrypt/renewal/$domain.conf" ]; then
+    rm -rf "/etc/letsencrypt/live/$domain" "/etc/letsencrypt/archive/$domain"
+    rm -f "/etc/letsencrypt/renewal/$domain.conf"
+  fi
+
+  certbot certonly \
+    --webroot \
+    --webroot-path /var/www/certbot \
+    --cert-name "$domain" \
+    --domain "$domain" \
+    --email "$CERTBOT_EMAIL" \
+    --agree-tos \
+    --non-interactive \
+    --keep-until-expiring \
+    $staging_arg
+done
+
+nginx -s reload

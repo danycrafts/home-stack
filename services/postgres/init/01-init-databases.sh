@@ -1,69 +1,36 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
-# Create n8n database and user
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-    CREATE USER ${N8N_DB_USER} WITH PASSWORD '${N8N_DB_PASSWORD}';
-    CREATE DATABASE ${N8N_DB_NAME} OWNER ${N8N_DB_USER};
-    GRANT ALL PRIVILEGES ON DATABASE ${N8N_DB_NAME} TO ${N8N_DB_USER};
-    -- Allow user to create schemas (needed for n8n)
-    ALTER USER ${N8N_DB_USER} CREATEDB;
-EOSQL
+database_password="${POSTGRES_DATABASE_PASSWORD:-changeme}"
 
-echo "✓ Created database: ${N8N_DB_NAME} with user: ${N8N_DB_USER}"
+if [ -z "${POSTGRES_DATABASES:-}" ]; then
+  echo "No additional POSTGRES_DATABASES requested."
+  exit 0
+fi
 
-# Create keycloak database and user
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-    CREATE USER ${KC_DB_USER} WITH PASSWORD '${KC_DB_PASSWORD}';
-    CREATE DATABASE ${KC_DB_NAME} OWNER ${KC_DB_USER};
-    GRANT ALL PRIVILEGES ON DATABASE ${KC_DB_NAME} TO ${KC_DB_USER};
-EOSQL
+for database_name in $POSTGRES_DATABASES; do
+  case "$database_name" in
+    *[!A-Za-z0-9_]* | [0-9]* | "")
+      echo "Invalid database name '$database_name'. Use letters, numbers, and underscores; do not start with a number." >&2
+      exit 1
+      ;;
+  esac
 
-echo "✓ Created database: ${KC_DB_NAME} with user: ${KC_DB_USER}"
+  role_exists="$(psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --tuples-only --no-align --command "SELECT 1 FROM pg_roles WHERE rolname = '$database_name';")"
+  if [ "$role_exists" != "1" ]; then
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --command "CREATE USER \"$database_name\" WITH PASSWORD '$database_password';"
+    echo "Created PostgreSQL user '$database_name'."
+  else
+    echo "PostgreSQL user '$database_name' already exists."
+  fi
 
-# Create schema for n8n (n8n requires a specific schema)
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$N8N_DB_NAME" <<-EOSQL
-    CREATE SCHEMA IF NOT EXISTS ${N8N_DB_NAME} AUTHORIZATION ${N8N_DB_USER};
-    ALTER USER ${N8N_DB_USER} SET search_path TO ${N8N_DB_NAME},public;
-EOSQL
+  database_exists="$(psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --tuples-only --no-align --command "SELECT 1 FROM pg_database WHERE datname = '$database_name';")"
+  if [ "$database_exists" != "1" ]; then
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --command "CREATE DATABASE \"$database_name\" OWNER \"$database_name\";"
+    echo "Created PostgreSQL database '$database_name'."
+  else
+    echo "PostgreSQL database '$database_name' already exists."
+  fi
 
-echo "✓ Configured schema for n8n"
-
-# ── Substrate Ingestion Database ──
-echo "Creating Substrate Ingestion database..."
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-    CREATE USER ${SUBSTRATE_INGESTION_DB_USER} WITH PASSWORD '${SUBSTRATE_INGESTION_DB_PASSWORD}';
-    CREATE DATABASE ${SUBSTRATE_INGESTION_DB_NAME} OWNER ${SUBSTRATE_INGESTION_DB_USER};
-    GRANT ALL PRIVILEGES ON DATABASE ${SUBSTRATE_INGESTION_DB_NAME} TO ${SUBSTRATE_INGESTION_DB_USER};
-EOSQL
-
-# Enable pgvector on substrate_ingestion
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$SUBSTRATE_INGESTION_DB_NAME" <<-EOSQL
-    CREATE EXTENSION IF NOT EXISTS vector;
-EOSQL
-
-echo "✓ Created database: ${SUBSTRATE_INGESTION_DB_NAME} with user: ${SUBSTRATE_INGESTION_DB_USER} (pgvector enabled)"
-
-# ── Substrate Graph Database ──
-echo "Creating Substrate Graph database..."
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-    CREATE USER ${SUBSTRATE_GRAPH_DB_USER} WITH PASSWORD '${SUBSTRATE_GRAPH_DB_PASSWORD}' SUPERUSER;
-    CREATE DATABASE ${SUBSTRATE_GRAPH_DB_NAME} OWNER ${SUBSTRATE_GRAPH_DB_USER};
-    GRANT ALL PRIVILEGES ON DATABASE ${SUBSTRATE_GRAPH_DB_NAME} TO ${SUBSTRATE_GRAPH_DB_USER};
-EOSQL
-
-# Enable AGE and pgvector on substrate_graph, create graph
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$SUBSTRATE_GRAPH_DB_NAME" <<-EOSQL
-    CREATE EXTENSION IF NOT EXISTS age;
-    CREATE EXTENSION IF NOT EXISTS vector;
-    LOAD 'age';
-    SET search_path = ag_catalog, "\$user", public;
-    SELECT create_graph('substrate');
-    GRANT USAGE ON SCHEMA ag_catalog TO ${SUBSTRATE_GRAPH_DB_USER};
-    GRANT SELECT ON ALL TABLES IN SCHEMA ag_catalog TO ${SUBSTRATE_GRAPH_DB_USER};
-    GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA ag_catalog TO ${SUBSTRATE_GRAPH_DB_USER};
-    ALTER DEFAULT PRIVILEGES IN SCHEMA ag_catalog GRANT SELECT ON TABLES TO ${SUBSTRATE_GRAPH_DB_USER};
-    ALTER DEFAULT PRIVILEGES IN SCHEMA ag_catalog GRANT EXECUTE ON FUNCTIONS TO ${SUBSTRATE_GRAPH_DB_USER};
-EOSQL
-
-echo "✓ Created database: ${SUBSTRATE_GRAPH_DB_NAME} with user: ${SUBSTRATE_GRAPH_DB_USER} (AGE + pgvector enabled, graph 'substrate' created)"
+  psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --command "GRANT ALL PRIVILEGES ON DATABASE \"$database_name\" TO \"$database_name\";"
+done

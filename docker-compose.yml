@@ -1,27 +1,24 @@
 name: home-stack
 
 include:
+  - path: ./services/nginx.yml
   - path: ./core/postgres.yml
+  - path: ./core/redis.yml
   - path: ./apps/keycloak.yml
   - path: ./apps/pgadmin.yml
-  - path: ./apps/n8n.yml
-  - path: ./apps/nginx-proxy-manager.yml
+  - path: ./apps/redis-commander.yml
 
 networks:
   infra-network:
-    name: local-infra-network
+    name: home-stack-infra
     driver: bridge
 
 volumes:
   postgres-data:
-    name: local-postgres-data
-  n8n-data:
-    name: local-n8n-data
-  npm-data:
-    name: local-npm-data
-  npm-letsencrypt:
-    name: local-npm-letsencrypt
-  kc-data:
-    name: local-kc-data
+    name: home-stack-postgres-data
+  keycloak-data:
+    name: home-stack-keycloak-data
   pgadmin-data:
-    name: local-pgadmin-data
+    name: home-stack-pgadmin-data
+  redis-data:
+    name: home-stack-redis-data

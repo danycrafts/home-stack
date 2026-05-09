@@ -1,5 +1,0 @@
-local-postgres:5432:*:postgres:changeme
-local-postgres:5432:*:keycloak:changeme
-local-postgres:5432:*:n8n:changeme
-local-postgres:5432:*:substrate_ingestion:changeme
-local-postgres:5432:*:substrate_graph:changeme

@@ -1,0 +1,12 @@
+services:
+  redis-commander:
+    image: rediscommander/redis-commander:${REDIS_COMMANDER_VERSION:-latest}
+    container_name: home-stack-redis-commander
+    environment:
+      REDIS_HOSTS: "local:redis:6379:0:${REDIS_PASSWORD:-changeme}"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - infra-network
+    restart: unless-stopped

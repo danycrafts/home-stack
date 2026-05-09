@@ -1,31 +1,18 @@
 services:
   redis:
     image: redis:${REDIS_VERSION:-7-alpine}
-    container_name: local-redis
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
+    container_name: home-stack-redis
+    command: ["sh", "-c", "redis-server --appendonly yes --requirepass \"$${REDIS_PASSWORD}\""]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
     volumes:
       - redis-data:/data
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
     networks:
       - infra-network
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
-    restart: unless-stopped
-
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: local-redis-commander
-    environment:
-      REDIS_HOSTS: "local:redis:6379:0:${REDIS_PASSWORD:-changeme}"
-    ports:
-      - "${REDIS_COMMANDER_PORT:-8081}:8081"
-    networks:
-      - infra-network
-    depends_on:
-      - redis
     restart: unless-stopped

@@ -1,21 +1,24 @@
 services:
   pgadmin:
     image: dpage/pgadmin4:${PGADMIN_VERSION:-latest}
-    container_name: local-pgadmin
+    container_name: home-stack-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: ${ADMIN_EMAIL:-admin@invariantcontinuum.io}
       PGADMIN_DEFAULT_PASSWORD: ${ADMIN_PASSWORD:-changeme}
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
-    ports:
-      - "${PGADMIN_PORT:-15050}:80"
     volumes:
       - pgadmin-data:/var/lib/pgadmin
+      - ../services/pgadmin/servers.json:/pgadmin4/servers.json:ro
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - infra-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/misc/ping >/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
