@@ -12,6 +12,7 @@ The stack intentionally uses plain Nginx instead of Nginx Proxy Manager. Nginx i
 | Keycloak | `https://auth.invariantcontinuum.io` | Empty realm state by default; realm/theme mount points are provided |
 | pgAdmin | `https://pgadmin.invariantcontinuum.io` | Connects to the internal Postgres service |
 | Redis Commander | `https://redis.invariantcontinuum.io` | UI for Redis |
+| SSH | `sh.invariantcontinuum.io:443` | SSH pass-through to this host's port 22 through Nginx stream |
 | Postgres | `postgres.invariantcontinuum.io:5432` | TCP pass-through through Nginx stream |
 | Redis | `redis.invariantcontinuum.io:6379` | TCP pass-through through Nginx stream |
 
@@ -23,7 +24,7 @@ services/nginx/
 ├── conf.d/              # one HTTP server file per routed domain
 ├── snippets/proxy.conf  # shared reverse proxy headers/timeouts
 ├── snippets/ssl.conf    # shared TLS policy
-├── stream.conf          # TCP pass-through routing
+├── stream.conf          # TCP pass-through routing, including 443 TLS/SSH multiplexing
 ├── certbot/www/         # ACME webroot
 ├── letsencrypt/         # mounted Let's Encrypt state
 └── logs/                # mounted Nginx access/error logs
@@ -60,3 +61,5 @@ make reset    # stop services and remove volumes
 ```
 
 The first boot creates short-lived self-signed placeholder certificates so Nginx can start before certbot issues real certificates. Run `make certs` after DNS for the configured domains points at this host.
+
+Port 443 is fronted by the Nginx stream module. TLS handshakes are routed to the internal HTTPS listeners on port 8443, while non-TLS SSH connections to `sh.invariantcontinuum.io:443` are routed to the host SSH daemon on port 22.
