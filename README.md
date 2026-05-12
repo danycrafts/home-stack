@@ -9,6 +9,7 @@ The stack intentionally uses plain Nginx instead of Nginx Proxy Manager. Nginx i
 | Service | Domain or endpoint | Notes |
 | --- | --- | --- |
 | Nginx | `https://nginx.invariantcontinuum.io` | Load balancer, health endpoint, certbot renewal, log rotation |
+| Crux Control | `https://crux.invariantcontinuum.io` | Public Crux Control homepage proxied to the `crux-control-homepage` container |
 | Keycloak | `https://auth.invariantcontinuum.io` | Empty realm state by default; realm/theme mount points are provided |
 | pgAdmin | `https://pgadmin.invariantcontinuum.io` | Connects to the internal Postgres service |
 | Redis Commander | `https://redis.invariantcontinuum.io` | UI for Redis |
