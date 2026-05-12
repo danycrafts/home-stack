@@ -7,6 +7,7 @@ include:
   - path: ./apps/keycloak.yml
   - path: ./apps/pgadmin.yml
   - path: ./apps/redis-commander.yml
+  - path: ./apps/crux-docs.yml
 
 networks:
   infra-network:

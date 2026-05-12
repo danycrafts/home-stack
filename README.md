@@ -10,6 +10,7 @@ The stack intentionally uses plain Nginx instead of Nginx Proxy Manager. Nginx i
 | --- | --- | --- |
 | Nginx | `https://nginx.invariantcontinuum.io` | Load balancer, health endpoint, certbot renewal, log rotation |
 | Crux Control | `https://crux.invariantcontinuum.io` | Public Crux Control homepage proxied to the `crux-control-homepage` container |
+| Crux Docs | `https://docs.invariantcontinuum.io` | Public Crux Control documentation served from `ghcr.io/agenticfleet/crux-docs` |
 | Keycloak | `https://auth.invariantcontinuum.io` | Empty realm state by default; realm/theme mount points are provided |
 | pgAdmin | `https://pgadmin.invariantcontinuum.io` | Connects to the internal Postgres service |
 | Redis Commander | `https://redis.invariantcontinuum.io` | UI for Redis |
@@ -62,5 +63,7 @@ make reset    # stop services and remove volumes
 ```
 
 The first boot creates short-lived self-signed placeholder certificates so Nginx can start before certbot issues real certificates. Run `make certs` after DNS for the configured domains points at this host.
+
+The Crux docs route pulls `ghcr.io/agenticfleet/crux-docs:${CRUX_DOCS_VERSION:-main}` and proxies it through `services/nginx/conf.d/docs.conf`.
 
 Port 443 is fronted by the Nginx stream module. TLS handshakes are routed to the internal HTTPS listeners on port 8443, while non-TLS SSH connections to `sh.invariantcontinuum.io:443` are routed to the host SSH daemon on port 22.

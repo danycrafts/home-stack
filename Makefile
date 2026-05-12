@@ -46,6 +46,7 @@ test:
 	docker compose config --quiet
 	curl -fsS http://localhost/healthz >/dev/null
 	curl -kfsS https://crux.invariantcontinuum.io/healthz --resolve crux.invariantcontinuum.io:443:127.0.0.1 >/dev/null
+	curl -kfsS https://docs.invariantcontinuum.io/healthz --resolve docs.invariantcontinuum.io:443:127.0.0.1 >/dev/null
 	curl -kfsS https://nginx.invariantcontinuum.io/healthz --resolve nginx.invariantcontinuum.io:443:127.0.0.1 >/dev/null
 	curl -kfsS https://pgadmin.invariantcontinuum.io/healthz --resolve pgadmin.invariantcontinuum.io:443:127.0.0.1 >/dev/null
 	curl -kfsS https://auth.invariantcontinuum.io/healthz --resolve auth.invariantcontinuum.io:443:127.0.0.1 >/dev/null

@@ -7,7 +7,7 @@ services:
     container_name: home-stack-nginx
     environment:
       CERTBOT_EMAIL: ${CERTBOT_EMAIL:-admin@invariantcontinuum.io}
-      CERTBOT_DOMAINS: ${CERTBOT_DOMAINS:-auth.invariantcontinuum.io pgadmin.invariantcontinuum.io redis.invariantcontinuum.io nginx.invariantcontinuum.io}
+      CERTBOT_DOMAINS: ${CERTBOT_DOMAINS:-auth.invariantcontinuum.io pgadmin.invariantcontinuum.io redis.invariantcontinuum.io nginx.invariantcontinuum.io crux.invariantcontinuum.io docs.invariantcontinuum.io}
       CERTBOT_STAGING: ${CERTBOT_STAGING:-false}
     ports:
       - "80:80"
@@ -36,6 +36,8 @@ services:
         condition: service_healthy
       redis-commander:
         condition: service_started
+      crux-docs:
+        condition: service_healthy
     networks:
       - infra-network
     healthcheck:
